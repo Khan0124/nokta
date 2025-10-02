@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(dart pub global activate:*)",
+      "Bash(rm:*)",
+      "Bash(find:*)",
+      "Bash(melos bootstrap:*)",
+      "Bash(dart pub:*)",
+      "Bash(flutter:*)"
+    ],
+    "deny": []
+  }
+}

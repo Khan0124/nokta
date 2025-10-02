@@ -1,0 +1,79 @@
+name: nokta_core
+description: Core package for Nokta POS System
+version: 1.0.0+1
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+    
+  # State Management
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
+  
+  # Data Models
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.8.1
+  
+  # Database
+  sqflite: ^2.3.0
+  path: ^1.8.3
+  
+  # Network
+  dio: ^5.4.0
+  connectivity_plus: ^5.0.2
+  
+  # Storage
+  shared_preferences: ^2.2.2
+  
+  # Utilities - Fixed intl version
+  intl: ^0.20.2  # Changed from 0.18.1 to match flutter_localizations
+  uuid: ^4.2.1
+  collection: ^1.18.0
+  crypto: ^3.0.3
+  
+  # Authentication
+  local_auth: ^2.1.7
+  
+  # Location
+  geolocator: ^10.1.0
+  google_maps_flutter: ^2.5.0
+  
+  # Image
+  image_picker: ^1.0.5
+  cached_network_image: ^3.3.0
+  
+  # Printing
+  printing: ^5.11.1
+  pdf: ^3.10.7
+  
+  # QR/Barcode
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^3.5.5
+  
+  # Charts
+  fl_chart: ^0.65.0
+  
+  # ML/OCR
+  google_ml_kit: ^0.16.3
+
+  # Additional utilities
+  flutter_secure_storage: ^9.0.0
+  http: ^1.1.0
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  build_runner: ^2.4.7
+  freezed: ^2.4.6
+  json_serializable: ^6.7.1
+  riverpod_generator: ^2.3.9
+
+flutter:
+  uses-material-design: true

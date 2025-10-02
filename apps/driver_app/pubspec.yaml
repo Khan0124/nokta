@@ -1,0 +1,72 @@
+name: driver_app
+description: Driver Application for Nokta POS Delivery
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  
+  # Core Package
+  nokta_core:
+    path: ../../packages/core
+    
+  # State Management
+  flutter_riverpod: ^2.4.9
+  
+  # Navigation
+  go_router: ^12.1.3
+  
+  # Maps & Location
+  google_maps_flutter: ^2.5.0
+  geolocator: ^10.1.0
+  geocoding: ^2.1.1
+  
+  # Permissions
+  permission_handler: ^11.1.0
+  
+  # Real-time
+  socket_io_client: ^2.0.3
+  
+  # Notifications
+  flutter_local_notifications: ^16.2.0
+  
+  # Phone Calls
+  url_launcher: ^6.2.2
+  
+  # Storage
+  shared_preferences: ^2.2.2
+  
+  # Network
+  dio: ^5.4.0
+  connectivity_plus: ^5.0.2
+  
+  # Utilities - Fixed intl version
+  intl: ^0.20.2  # Updated to match flutter_localizations
+  
+  # UI
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+  
+  # fonts:
+  #   - family: Cairo
+  #     fonts:
+  #       - asset: assets/fonts/Cairo-Regular.ttf
+  #       - asset: assets/fonts/Cairo-Bold.ttf
+  #         weight: 700

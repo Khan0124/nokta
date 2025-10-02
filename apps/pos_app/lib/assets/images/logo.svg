@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="100" cy="100" r="95" fill="#1976D2" stroke="#0D47A1" stroke-width="10"/>
+  
+  <!-- Main POS Icon -->
+  <g transform="translate(40, 40)">
+    <!-- Screen -->
+    <rect x="15" y="15" width="90" height="60" rx="8" fill="#FFFFFF" stroke="#0D47A1" stroke-width="2"/>
+    <rect x="20" y="20" width="80" height="50" rx="4" fill="#E3F2FD"/>
+    
+    <!-- Screen Content Lines -->
+    <line x1="25" y1="30" x2="95" y2="30" stroke="#1976D2" stroke-width="2"/>
+    <line x1="25" y1="40" x2="85" y2="40" stroke="#1976D2" stroke-width="2"/>
+    <line x1="25" y1="50" x2="90" y2="50" stroke="#1976D2" stroke-width="2"/>
+    <line x1="25" y1="60" x2="80" y2="60" stroke="#1976D2" stroke-width="2"/>
+    
+    <!-- Base/Stand -->
+    <rect x="35" y="75" width="50" height="8" rx="4" fill="#FFFFFF" stroke="#0D47A1" stroke-width="2"/>
+    <rect x="45" y="83" width="30" height="20" rx="6" fill="#FFFFFF" stroke="#0D47A1" stroke-width="2"/>
+    
+    <!-- Side Elements (representing POS peripherals) -->
+    <circle cx="10" cy="45" r="8" fill="#FF9800" stroke="#F57C00" stroke-width="2"/>
+    <rect x="105" y="35" width="12" height="20" rx="6" fill="#4CAF50" stroke="#388E3C" stroke-width="2"/>
+  </g>
+  
+  <!-- Arabic Text "نقطة" -->
+  <text x="100" y="150" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#FFFFFF" text-anchor="middle">نقطة</text>
+  
+  <!-- English Text "POS" -->
+  <text x="100" y="175" font-family="Arial, sans-serif" font-size="14" fill="#E3F2FD" text-anchor="middle">Point of Sale</text>
+</svg>

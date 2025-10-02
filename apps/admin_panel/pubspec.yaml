@@ -1,0 +1,62 @@
+name: admin_panel
+description: Admin Dashboard for Nokta POS System
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  
+  # Core Package
+  nokta_core:
+    path: ../../packages/core
+    
+  # State Management
+  flutter_riverpod: ^2.4.9
+  
+  # Navigation
+  go_router: ^12.1.3
+  
+  # Charts
+  fl_chart: ^0.65.0
+  
+  # Data Tables
+  data_table_2: ^2.5.9
+  
+  # Network
+  dio: ^5.4.0
+  
+  # Storage
+  shared_preferences: ^2.2.2
+  
+  # Utilities - Fixed intl version
+  intl: ^0.20.2  # Updated to match flutter_localizations
+  collection: ^1.18.0
+  
+  # File Export
+  excel: ^2.1.0
+  pdf: ^3.10.7
+  
+  # Icons
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+  
+  # fonts:
+  #   - family: Cairo
+  #     fonts:
+  #       - asset: fonts/Cairo-Regular.ttf
+  #       - asset: fonts/Cairo-Bold.ttf
+  #         weight: 700
