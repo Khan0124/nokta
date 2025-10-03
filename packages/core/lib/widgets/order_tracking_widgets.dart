@@ -1,167 +1,204 @@
 import 'package:flutter/material.dart';
+import 'package:nokta_core/l10n/app_localizations.dart';
+import 'package:nokta_core/models/order.dart';
+import 'package:nokta_core/models/order_tracking_update.dart';
 
 class OrderStatusTimeline extends StatelessWidget {
-  final String currentStatus;
-
   const OrderStatusTimeline({
     super.key,
-    required this.currentStatus,
+    required this.currentStage,
   });
+
+  final OrderTrackingStage currentStage;
+
+  static const _stages = [
+    OrderTrackingStage.placed,
+    OrderTrackingStage.confirmed,
+    OrderTrackingStage.preparing,
+    OrderTrackingStage.driverAssigned,
+    OrderTrackingStage.onTheWay,
+    OrderTrackingStage.delivered,
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final statuses = [
-      {
-        'status': 'confirmed',
-        'title': 'Order Confirmed',
-        'icon': Icons.check_circle
-      },
-      {'status': 'preparing', 'title': 'Preparing', 'icon': Icons.restaurant},
-      {'status': 'ready', 'title': 'Ready for Pickup', 'icon': Icons.done_all},
-      {
-        'status': 'on_way',
-        'title': 'On the Way',
-        'icon': Icons.delivery_dining
-      },
-      {'status': 'delivered', 'title': 'Delivered', 'icon': Icons.home},
-    ];
-
+    final l10n = context.l10n;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Order Progress',
+          l10n.translate('customer.order.timelineTitle'),
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
         ),
         const SizedBox(height: 16),
-        ...statuses.asMap().entries.map((entry) {
-          final index = entry.key;
-          final status = entry.value;
-          final statusString = status['status'] as String;
-          final isCompleted = _isStatusCompleted(statusString);
-          final isCurrent = statusString == currentStatus;
-
-          return Row(
+        ..._stages.map((stage) {
+          final index = _stages.indexOf(stage);
+          final isCompleted = index <= _stages.indexOf(currentStage);
+          final isCurrent = stage == currentStage;
+          return Column(
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: isCompleted
-                      ? Colors.green
-                      : isCurrent
-                          ? Colors.orange
-                          : Colors.grey[300],
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  status['icon'] as IconData,
-                  color: isCompleted || isCurrent
-                      ? Colors.white
-                      : Colors.grey[600],
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      (status['title'] as String?) ?? 'Unknown',
-                      style: TextStyle(
-                        fontWeight:
-                            isCurrent ? FontWeight.w600 : FontWeight.normal,
-                        color: isCurrent ? Colors.orange : null,
-                      ),
-                    ),
-                    if (isCurrent)
-                      Text(
-                        'Current Status',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.orange,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _TimelineIcon(stage: stage, isCompleted: isCompleted, isCurrent: isCurrent),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _stageLabel(stage, l10n),
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                                color: isCurrent
+                                    ? Theme.of(context).colorScheme.primary
+                                    : null,
+                              ),
                         ),
-                      ),
-                  ],
-                ),
+                        if (isCurrent)
+                          Text(
+                            l10n.translate('customer.order.inProgress'),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(color: Theme.of(context).colorScheme.primary),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              if (index < statuses.length - 1)
-                Container(
-                  width: 2,
-                  height: 30,
-                  color: isCompleted ? Colors.green : Colors.grey[300],
+              if (index != _stages.length - 1)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+                  child: Container(
+                    width: 2,
+                    height: 24,
+                    color: isCompleted
+                        ? Theme.of(context).colorScheme.primary
+                        : Colors.grey.shade300,
+                  ),
                 ),
             ],
           );
-        }).toList(),
+        }),
       ],
     );
   }
 
-  bool _isStatusCompleted(String status) {
-    final statusOrder = [
-      'confirmed',
-      'preparing',
-      'ready',
-      'on_way',
-      'delivered'
-    ];
-    final currentIndex = statusOrder.indexOf(currentStatus);
-    final statusIndex = statusOrder.indexOf(status);
-    return statusIndex <= currentIndex;
+  String _stageLabel(OrderTrackingStage stage, AppLocalizations l10n) {
+    switch (stage) {
+      case OrderTrackingStage.placed:
+        return l10n.translate('customer.order.status.placed');
+      case OrderTrackingStage.confirmed:
+        return l10n.translate('customer.order.status.confirmed');
+      case OrderTrackingStage.preparing:
+        return l10n.translate('customer.order.status.preparing');
+      case OrderTrackingStage.driverAssigned:
+        return l10n.translate('customer.order.status.driverAssigned');
+      case OrderTrackingStage.onTheWay:
+        return l10n.translate('customer.order.status.onTheWay');
+      case OrderTrackingStage.delivered:
+        return l10n.translate('customer.order.status.delivered');
+      case OrderTrackingStage.cancelled:
+        return l10n.translate('customer.order.status.cancelled');
+    }
+  }
+}
+
+class _TimelineIcon extends StatelessWidget {
+  const _TimelineIcon({
+    required this.stage,
+    required this.isCompleted,
+    required this.isCurrent,
+  });
+
+  final OrderTrackingStage stage;
+  final bool isCompleted;
+  final bool isCurrent;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isCompleted
+        ? Theme.of(context).colorScheme.primary
+        : Colors.grey.shade300;
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: isCompleted
+            ? Theme.of(context).colorScheme.primary
+            : isCurrent
+                ? Theme.of(context).colorScheme.secondary
+                : Colors.grey.shade200,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        _iconForStage(stage),
+        color: isCompleted || isCurrent
+            ? Colors.white
+            : Colors.grey.shade600,
+        size: 20,
+      ),
+    );
+  }
+
+  IconData _iconForStage(OrderTrackingStage stage) {
+    switch (stage) {
+      case OrderTrackingStage.placed:
+        return Icons.check_circle_outline;
+      case OrderTrackingStage.confirmed:
+        return Icons.restaurant_menu;
+      case OrderTrackingStage.preparing:
+        return Icons.kitchen_outlined;
+      case OrderTrackingStage.driverAssigned:
+        return Icons.delivery_dining;
+      case OrderTrackingStage.onTheWay:
+        return Icons.map_outlined;
+      case OrderTrackingStage.delivered:
+        return Icons.home_outlined;
+      case OrderTrackingStage.cancelled:
+        return Icons.cancel_outlined;
+    }
   }
 }
 
 class OrderTrackingMap extends StatelessWidget {
-  final double? driverLat;
-  final double? driverLng;
-  final double? destinationLat;
-  final double? destinationLng;
-
   const OrderTrackingMap({
     super.key,
     this.driverLat,
     this.driverLng,
-    this.destinationLat,
-    this.destinationLng,
   });
+
+  final double? driverLat;
+  final double? driverLng;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Container(
       height: 200,
       decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(8),
+        color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.map,
-              size: 48,
-              color: Colors.grey[600],
-            ),
+            Icon(Icons.map, size: 48, color: Colors.grey.shade600),
             const SizedBox(height: 8),
-            Text(
-              'Map View',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 16,
+            Text(l10n.translate('customer.order.mapPlaceholder')),
+            if (driverLat != null && driverLng != null)
+              Text(
+                '(${driverLat!.toStringAsFixed(4)}, ${driverLng!.toStringAsFixed(4)})',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: Colors.grey.shade600),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Driver location tracking',
-              style: TextStyle(
-                color: Colors.grey[500],
-                fontSize: 12,
-              ),
-            ),
           ],
         ),
       ),
@@ -170,15 +207,16 @@ class OrderTrackingMap extends StatelessWidget {
 }
 
 class OrderDetailsCard extends StatelessWidget {
-  final Map<String, dynamic> order;
-
   const OrderDetailsCard({
     super.key,
     required this.order,
   });
 
+  final Order order;
+
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -186,26 +224,56 @@ class OrderDetailsCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Order Details',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              l10n.translate('customer.order.detailsTitle'),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
-            const SizedBox(height: 16),
-            _buildDetailRow('Order ID', order['id'] ?? 'N/A'),
-            _buildDetailRow('Status', order['status'] ?? 'N/A'),
-            if (order['estimatedDelivery'] != null)
-              _buildDetailRow(
-                'Estimated Delivery',
-                _formatDateTime(order['estimatedDelivery']),
+            const SizedBox(height: 12),
+            _detailRow(l10n.translate('customer.order.orderId'), '#${order.id}'),
+            _detailRow(
+              l10n.translate('customer.order.totalAmount'),
+              l10n.formatCurrency(order.total),
+            ),
+            if (order.deliveryAddress != null)
+              _detailRow(
+                l10n.translate('customer.order.deliveryAddress'),
+                order.deliveryAddress!,
               ),
+            _detailRow(
+              l10n.translate('customer.order.paymentMethod'),
+              order.paymentMethod != null
+                  ? order.paymentMethod!.name
+                  : l10n.translate('customer.order.paymentPending'),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              l10n.translate('customer.order.itemsHeading'),
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+            ...order.items.map(
+              (item) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${item.quantity} × ${item.notes ?? '#${item.productId}'}',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                    Text(l10n.formatCurrency(item.totalPrice)),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
+  Widget _detailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -213,41 +281,32 @@ class OrderDetailsCard extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.grey,
-              fontSize: 14,
-            ),
+            style: const TextStyle(color: Colors.grey, fontSize: 13),
           ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ],
       ),
     );
   }
-
-  String _formatDateTime(dynamic dateTime) {
-    if (dateTime is String) {
-      return DateTime.parse(dateTime).toString().substring(0, 16);
-    }
-    return dateTime.toString().substring(0, 16);
-  }
 }
 
 class DriverInfoCard extends StatelessWidget {
-  final Map<String, dynamic> driver;
-
   const DriverInfoCard({
     super.key,
     required this.driver,
   });
 
+  final Map<String, dynamic> driver;
+
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -255,22 +314,16 @@ class DriverInfoCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Driver Information',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              l10n.translate('customer.order.driverTitle'),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Row(
               children: [
                 CircleAvatar(
-                  radius: 24,
-                  backgroundColor: Colors.grey[300],
-                  child: Icon(
-                    Icons.person,
-                    color: Colors.grey[600],
-                    size: 24,
-                  ),
+                  radius: 28,
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  child: const Icon(Icons.person),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -278,44 +331,37 @@ class DriverInfoCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        driver['name'] ?? 'Driver Name',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                        ),
+                        driver['name'] ?? l10n.translate('customer.order.driverUnknown'),
+                        style: Theme.of(context).textTheme.titleMedium,
                       ),
                       Text(
-                        driver['vehicle'] ?? 'Vehicle Info',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
+                        driver['vehicle'] ?? '',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: Colors.grey.shade600),
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => _callDriver(driver['phone']),
+                    onPressed: () {},
                     icon: const Icon(Icons.phone),
-                    label: const Text('Call'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                    ),
+                    label: Text(l10n.translate('customer.order.callDriver')),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => _openChat(driver['id']),
-                    icon: const Icon(Icons.chat),
-                    label: const Text('Chat'),
+                    onPressed: () {},
+                    icon: const Icon(Icons.chat_bubble_outline),
+                    label: Text(l10n.translate('customer.order.chatDriver')),
                   ),
                 ),
               ],
@@ -325,25 +371,12 @@ class DriverInfoCard extends StatelessWidget {
       ),
     );
   }
-
-  void _callDriver(String? phone) {
-    // TODO: Implement phone call functionality
-    print('Calling driver: $phone');
-  }
-
-  void _openChat(String? driverId) {
-    // TODO: Implement chat functionality
-    print('Opening chat with driver: $driverId');
-  }
 }
 
 class LoadingScreen extends StatelessWidget {
-  final String message;
+  const LoadingScreen({super.key, this.message});
 
-  const LoadingScreen({
-    super.key,
-    this.message = 'Loading...',
-  });
+  final String? message;
 
   @override
   Widget build(BuildContext context) {
@@ -352,8 +385,8 @@ class LoadingScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const CircularProgressIndicator(),
-          const SizedBox(height: 16),
-          Text(message),
+          const SizedBox(height: 12),
+          Text(message ?? context.l10n.translate('customer.common.loading')),
         ],
       ),
     );
@@ -361,37 +394,36 @@ class LoadingScreen extends StatelessWidget {
 }
 
 class ErrorScreen extends StatelessWidget {
-  final String message;
-  final VoidCallback? onRetry;
-
   const ErrorScreen({
     super.key,
     required this.message,
     this.onRetry,
   });
 
+  final String message;
+  final VoidCallback? onRetry;
+
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: Colors.red[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16),
+          Icon(Icons.error_outline, size: 60, color: Theme.of(context).colorScheme.error),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              message,
+              textAlign: TextAlign.center,
+            ),
           ),
           if (onRetry != null) ...[
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: onRetry,
-              child: const Text('Retry'),
+              child: Text(l10n.translate('customer.common.retry')),
             ),
           ],
         ],

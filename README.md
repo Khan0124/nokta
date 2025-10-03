@@ -11,6 +11,7 @@ A comprehensive, production-ready Point of Sale (POS) system built with modern a
 - **Order Management** - Complete order lifecycle
 - **Payment Processing** - Multiple payment methods
 - **Reporting & Analytics** - Business insights
+- **Dynamic Pricing** - Tenant-controlled offers and availability overrides
 - **Mobile Applications** - Flutter-based mobile apps
 - **API-First Design** - RESTful API with comprehensive documentation
 
@@ -45,6 +46,8 @@ A comprehensive, production-ready Point of Sale (POS) system built with modern a
 - **Session Management** - Redis-based sessions
 - **Rate Limiting** - Brute force protection
 - **Audit Logging** - Complete activity tracking
+- **Account Defense** - Login lockouts, inactivity timeouts, and session fingerprinting
+- **Operational Metrics** - Built-in latency/error telemetry and alert evaluation
 
 ## 📁 Project Structure
 
@@ -77,6 +80,18 @@ nokta_saas/
 ├── docker-compose.prod.yml    # Production environment
 └── README.md                  # This file
 ```
+
+## 🗂️ Binary Assets
+
+This repository uses [Git LFS](https://git-lfs.com/) to manage large or binary files such as images, audio, video, and PDF documents. The `.gitattributes` configuration automatically tracks common binary extensions (`png`, `jpg`, `jpeg`, `gif`, `svg`, `mp3`, `wav`, `mp4`, `mov`, `pdf`), ensuring these assets are stored efficiently and do not bloat regular Git history.
+
+> **Note for contributors:** Install Git LFS locally before cloning or pulling updates to guarantee binary assets are fetched correctly:
+
+```bash
+git lfs install
+```
+
+When new binary files are added that match the configured patterns, they will be stored via LFS automatically—no extra steps required.
 
 ## 🛠️ Technology Stack
 
@@ -394,6 +409,32 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🆘 Support
 
 ### Documentation
+- [Discovery Audit](AUDIT_REPORT.md)
+- [Database Schema](DB_SCHEMA.md)
+- [Architecture Map](ARCH_MAP.png)
+- [Architecture Decisions Baseline](ARCHITECTURE_DECISIONS.md)
+- [Service Integration Points](SERVICE_INTEGRATION_POINTS.md)
+- [Feature Flags Playbook](FEATURE_FLAGS_PLAYBOOK.md)
+- [Localization Guide](I18N_GUIDE.md)
+- [POS Operations Guide](POS_OPERATIONS_GUIDE.md)
+- [Call Center Operations Guide](CALL_CENTER_OPERATIONS_GUIDE.md)
+- [Customer Experience Guide](CUSTOMER_UX_GUIDE.md)
+- [Dynamic Pricing Guide](DYNAMIC_PRICING_GUIDE.md)
+- [Tenant Onboarding Playbook](TENANT_ONBOARDING_GUIDE.md)
+- [Customer App Test Plan](CUSTOMER_TEST_PLAN.md)
+- [Admin Dashboard Operations Guide](ADMIN_DASHBOARD_GUIDE.md)
+- [Billing Suspension & Reactivation Policy](BILLING_POLICY.md)
+- [Subscription Invoice PDF Template](INVOICE_TEMPLATE.md)
+- [Payment Collection Log SOP](PAYMENT_COLLECTION_LOG.md)
+- [Security Checklist](SECURITY_CHECKLIST.md)
+- [Backup & Restore Runbook](BACKUP_RESTORE_RUNBOOK.md)
+- [Migration & Cutover Plan](MIGRATION_REPORT.md)
+- [Definition of Done & SLOs](DOD_SLOS.md)
+- [Admin Report Templates](ADMIN_REPORT_TEMPLATES.md)
+- [Driver Route Tracking Blueprint](DRIVER_ROUTE_TRACKING.md)
+- [Driver Location Privacy Policy](DRIVER_LOCATION_PRIVACY_POLICY.md)
+- [Driver Performance Report Template](DRIVER_PERFORMANCE_REPORT_TEMPLATE.md)
+- [POS Test Plan](POS_TEST_PLAN.md)
 - [API Documentation](docs/api.md)
 - [Deployment Guide](docs/deployment.md)
 - [Troubleshooting](docs/troubleshooting.md)

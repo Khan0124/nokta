@@ -1,0 +1,44 @@
+{
+  "adjustments": [
+    {
+      "id": "launch-lunch-special",
+      "name": "Lunch Rush 15%",
+      "description": "Automatic lunch special from 12:00 - 15:00",
+      "type": "percentage",
+      "value": 15,
+      "productIds": [3, 4],
+      "branchIds": [],
+      "channels": ["pos", "customer"],
+      "priority": 50,
+      "startAt": "2025-10-01T09:00:00Z",
+      "endAt": "2025-12-31T15:00:00Z",
+      "stackable": false
+    },
+    {
+      "id": "evening-family-bundle",
+      "name": "Family Bundle SAR 99",
+      "description": "Fixed price family bundle after 5pm",
+      "type": "fixed",
+      "fixedPrice": 99,
+      "productIds": [2, 3, 5],
+      "channels": ["customer"],
+      "priority": 40,
+      "startAt": "2025-10-01T14:00:00Z",
+      "endAt": "2025-12-31T22:00:00Z",
+      "stackable": false
+    },
+    {
+      "id": "driver-surge-suspend",
+      "name": "Driver Surge Pause",
+      "description": "Temporarily disable delivery-only exclusives when capacity is constrained",
+      "type": "availability",
+      "productIds": [6],
+      "channels": ["customer"],
+      "priority": 10,
+      "startAt": null,
+      "endAt": null,
+      "stackable": false
+    }
+  ],
+  "availability": []
+}

@@ -1,45 +1,56 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:nokta_core/nokta_core.dart';
 
+import 'screens/checkout/checkout_screen.dart';
 import 'screens/home/home_screen.dart';
+import 'screens/order/order_tracking_screen.dart';
+import 'screens/profile/profile_screen.dart';
+import 'screens/restaurant/restaurant_screen.dart';
+import 'screens/search/search_screen.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize locale data
   await initializeDateFormatting('en_US');
   await initializeDateFormatting('ar_SA');
 
-  // Initialize services
-  // LocalDB initialization is handled automatically
+  final localeService = await LocaleService.create();
 
   runApp(
-    const ProviderScope(
-      child: CustomerApp(),
+    ProviderScope(
+      overrides: [
+        localeServiceProvider.overrideWithValue(localeService),
+      ],
+      child: const CustomerApp(),
     ),
   );
 }
 
-class CustomerApp extends StatelessWidget {
+class CustomerApp extends ConsumerWidget {
   const CustomerApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider);
     return MaterialApp.router(
-      title: 'Nokta - Food Delivery',
       debugShowCheckedModeBanner: false,
+      title: 'Nokta Customer',
       theme: _buildLightTheme(),
       darkTheme: _buildDarkTheme(),
       themeMode: ThemeMode.system,
-      routerConfig: _router,
-      locale: const Locale('ar'),
-      supportedLocales: const [
-        Locale('en'),
-        Locale('ar'),
+      locale: locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
       ],
+      routerConfig: _router,
     );
   }
 
@@ -50,19 +61,17 @@ class CustomerApp extends StatelessWidget {
         seedColor: const Color(0xFFFF6B35),
         brightness: Brightness.light,
       ),
-      // fontFamily: 'Cairo', // Temporarily disabled
-      // Fixed CardTheme
-      cardTheme: CardThemeData(
-        elevation: 2,
+      cardTheme: CardTheme(
+        elevation: 0,
+        margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
       ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
       ),
@@ -76,10 +85,9 @@ class CustomerApp extends StatelessWidget {
         seedColor: const Color(0xFFFF6B35),
         brightness: Brightness.dark,
       ),
-      // fontFamily: 'Cairo', // Temporarily disabled
-      // Fixed CardTheme
-      cardTheme: CardThemeData(
-        elevation: 2,
+      cardTheme: CardTheme(
+        elevation: 0,
+        margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -88,7 +96,6 @@ class CustomerApp extends StatelessWidget {
   }
 }
 
-// Router configuration
 final _router = GoRouter(
   initialLocation: '/',
   routes: [
@@ -99,8 +106,8 @@ final _router = GoRouter(
     GoRoute(
       path: '/restaurant/:id',
       builder: (context, state) {
-        final restaurantId = int.parse(state.pathParameters['id'] ?? '0');
-        return RestaurantScreen(restaurantId: restaurantId);
+        final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+        return RestaurantScreen(restaurantId: id);
       },
     ),
     GoRoute(
@@ -110,8 +117,8 @@ final _router = GoRouter(
     GoRoute(
       path: '/order/:id',
       builder: (context, state) {
-        final orderId = int.parse(state.pathParameters['id'] ?? '0');
-        return OrderTrackingScreen(orderId: orderId);
+        final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+        return OrderTrackingScreen(orderId: id);
       },
     ),
     GoRoute(
@@ -124,66 +131,3 @@ final _router = GoRouter(
     ),
   ],
 );
-
-// Placeholder screens (to be implemented)
-class RestaurantScreen extends StatelessWidget {
-  final int restaurantId;
-  const RestaurantScreen({super.key, required this.restaurantId});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Restaurant $restaurantId')),
-      body: const Center(child: Text('Restaurant Details')),
-    );
-  }
-}
-
-class CheckoutScreen extends StatelessWidget {
-  const CheckoutScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Checkout')),
-      body: const Center(child: Text('Checkout Screen')),
-    );
-  }
-}
-
-class OrderTrackingScreen extends StatelessWidget {
-  final int orderId;
-  const OrderTrackingScreen({super.key, required this.orderId});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Order #$orderId')),
-      body: const Center(child: Text('Order Tracking')),
-    );
-  }
-}
-
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
-      body: const Center(child: Text('Profile Screen')),
-    );
-  }
-}
-
-class SearchScreen extends StatelessWidget {
-  const SearchScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Search')),
-      body: const Center(child: Text('Search Screen')),
-    );
-  }
-}
