@@ -82,6 +82,32 @@ if (config.server.env === 'development') {
   }));
 }
 
+// Dedicated audit logger for compliance-sensitive events
+const auditLogger = winston.createLogger({
+  level: 'info',
+  format: logFormat,
+  defaultMeta: {
+    service: 'nokta-pos-audit',
+    version: '1.0.0'
+  },
+  transports: [
+    new DailyRotateFile({
+      filename: path.join(logsDir, 'audit-%DATE%.log'),
+      datePattern: 'YYYY-MM-DD',
+      maxSize: config.logging.maxSize,
+      maxFiles: '90d',
+      level: 'info'
+    })
+  ]
+});
+
+if (config.server.env === 'development') {
+  auditLogger.add(new winston.transports.Console({
+    format: consoleFormat,
+    level: 'info'
+  }));
+}
+
 // Add request logging middleware
 const requestLogger = (req, res, next) => {
   const start = Date.now();
@@ -205,6 +231,7 @@ process.on('SIGINT', () => {
 
 module.exports = {
   logger,
+  auditLogger,
   requestLogger,
   errorLogger,
   queryLogger,

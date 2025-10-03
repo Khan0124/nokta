@@ -51,7 +51,11 @@ const config = {
     bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS) || 12,
     sessionSecret: process.env.SESSION_SECRET || 'nokta_session_secret_2024',
     maxFileSize: parseInt(process.env.MAX_FILE_SIZE) || 10485760, // 10MB
-    uploadPath: process.env.UPLOAD_PATH || './uploads'
+    uploadPath: process.env.UPLOAD_PATH || './uploads',
+    failedAttemptWindow: parseInt(process.env.FAILED_ATTEMPT_WINDOW) || 15 * 60,
+    lockoutThreshold: parseInt(process.env.ACCOUNT_LOCK_THRESHOLD) || 5,
+    lockoutDuration: parseInt(process.env.ACCOUNT_LOCK_DURATION) || 15 * 60,
+    sessionInactivityTimeout: parseInt(process.env.SESSION_INACTIVITY_TIMEOUT) || 30 * 60
   },
 
   // Rate Limiting
@@ -88,13 +92,43 @@ const config = {
     level: process.env.LOG_LEVEL || 'info',
     file: process.env.LOG_FILE || './logs/app.log',
     maxSize: '20m',
-    maxFiles: '14d'
+    maxFiles: '14d',
+    auditFile: process.env.AUDIT_LOG_FILE || './logs/audit.log'
   },
 
   // Monitoring Configuration
   monitoring: {
     enabled: process.env.ENABLE_METRICS === 'true',
-    port: parseInt(process.env.METRICS_PORT) || 9090
+    port: parseInt(process.env.METRICS_PORT) || 9090,
+    errorRateThreshold: parseFloat(process.env.ERROR_RATE_THRESHOLD || '0.05'),
+    slowRequestThresholdMs: parseInt(process.env.SLOW_REQUEST_THRESHOLD_MS) || 1000,
+    recentSampleSize: parseInt(process.env.MONITORING_RECENT_SAMPLE) || 50
+  },
+
+  // Backup & Restore Configuration
+  backup: {
+    enabled: process.env.BACKUP_ENABLED !== 'false',
+    directory: process.env.BACKUP_DIRECTORY || path.join(__dirname, '../backups'),
+    retentionDays: parseInt(process.env.BACKUP_RETENTION_DAYS) || 30,
+    schedule: process.env.BACKUP_SCHEDULE || '0 3 * * *',
+    verificationSchedule: process.env.BACKUP_VERIFICATION_SCHEDULE || '0 6 1 * *',
+    encryptionKey: process.env.BACKUP_ENCRYPTION_KEY || null
+  },
+
+  // Dynamic Pricing Configuration
+  dynamicPricing: {
+    namespace: process.env.DYNAMIC_PRICING_NAMESPACE || 'dynamic-pricing',
+    cacheTtlSeconds: parseInt(process.env.DYNAMIC_PRICING_CACHE_TTL) || 30,
+    defaultDurationHours: parseInt(process.env.DYNAMIC_PRICING_DEFAULT_DURATION_HOURS) || 6,
+    maxActiveAdjustments: parseInt(process.env.DYNAMIC_PRICING_MAX_ACTIVE) || 200
+  },
+
+  // Feature Flag Configuration
+  featureFlags: {
+    namespace: process.env.FEATURE_FLAG_NAMESPACE || 'feature-flags',
+    allowRuntimeUpdates: process.env.FEATURE_FLAGS_RUNTIME_UPDATES !== 'false',
+    cacheTtlSeconds: parseInt(process.env.FEATURE_FLAGS_CACHE_TTL) || 15,
+    auditTrail: process.env.FEATURE_FLAGS_AUDIT !== 'false'
   }
 };
 

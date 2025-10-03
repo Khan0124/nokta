@@ -1,0 +1,93 @@
+{
+  "pos.offlineQueue": {
+    "description": "Enable the offline-first order queue, local SQLite persistence, and sync banners in the POS app.",
+    "enabled": true,
+    "tags": ["pos", "offline"],
+    "owner": "pos-platform",
+    "since": "2024-09-15",
+    "environments": ["development", "staging", "production"],
+    "rollout": {
+      "strategy": "all"
+    }
+  },
+  "pos.enhancedReceipts": {
+    "description": "Expose advanced receipt options including compact layouts, QR payloads, and barcode rendering.",
+    "enabled": true,
+    "tags": ["pos", "printing"],
+    "owner": "pos-platform",
+    "since": "2024-09-22",
+    "environments": ["staging", "production"],
+    "rollout": {
+      "strategy": "all"
+    }
+  },
+  "callCenter.routing": {
+    "description": "Activate the call center workspace, Redis-backed queueing, and guided order capture flows.",
+    "enabled": true,
+    "tags": ["call-center"],
+    "owner": "operations",
+    "since": "2024-10-01",
+    "environments": ["development", "staging", "production"],
+    "rollout": {
+      "strategy": "all"
+    }
+  },
+  "driver.dynamicTracking": {
+    "description": "Enable adaptive GPS sampling, live route dashboards, and settlement summaries for drivers.",
+    "enabled": true,
+    "tags": ["driver", "logistics"],
+    "owner": "mobility",
+    "since": "2024-10-05",
+    "environments": ["staging", "production"],
+    "rollout": {
+      "strategy": "all"
+    }
+  },
+  "billing.saas": {
+    "description": "Expose SaaS subscription management, invoice PDFs, and pluggable payment gateways.",
+    "enabled": true,
+    "tags": ["billing"],
+    "owner": "finance",
+    "since": "2024-10-10",
+    "environments": ["development", "staging", "production"],
+    "rollout": {
+      "strategy": "all"
+    }
+  },
+  "customer.loyalty": {
+    "description": "Surface loyalty points accrual, voucher redemption, and customer tiers in the client apps.",
+    "enabled": false,
+    "tags": ["customer", "growth"],
+    "owner": "growth",
+    "since": "2024-10-18",
+    "environments": ["development", "staging"],
+    "rollout": {
+      "strategy": "percentage",
+      "percentage": 15
+    }
+  },
+  "platform.dynamicPricing": {
+    "description": "Enable tenant-managed price adjustments, availability overrides, and evaluation APIs.",
+    "enabled": false,
+    "tags": ["platform", "pricing"],
+    "owner": "commerce",
+    "since": "2024-10-25",
+    "environments": ["development", "staging"],
+    "rollout": {
+      "strategy": "roles",
+      "roles": ["admin", "manager"]
+    }
+  },
+  "platform.experiments": {
+    "description": "Allow tenant-level opt-in to experimental features via the admin dashboard feature toggle page.",
+    "enabled": false,
+    "tags": ["platform"],
+    "owner": "architecture",
+    "since": "2024-10-20",
+    "environments": ["development"],
+    "rollout": {
+      "strategy": "roles",
+      "roles": ["admin"]
+    }
+  }
+}

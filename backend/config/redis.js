@@ -120,6 +120,17 @@ class RedisManager {
     }
   }
 
+  async setKeepTTL(key, value) {
+    try {
+      const serializedValue = JSON.stringify(value);
+      await this.client.set(key, serializedValue, { KEEPTTL: true });
+      return true;
+    } catch (error) {
+      logger.error('Redis SET operation with KEEPTTL failed:', { key, error: error.message });
+      throw error;
+    }
+  }
+
   async del(key) {
     try {
       const result = await this.client.del(key);

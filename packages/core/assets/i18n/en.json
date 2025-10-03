@@ -1,0 +1,159 @@
+{
+  "app": {
+    "title": "Nokta POS"
+  },
+  "common": {
+    "ok": "OK",
+    "save": "Save",
+    "error": "Error"
+  },
+  "pos": {
+    "screenTitle": "Point of Sale",
+    "allFilter": "All",
+    "errorLoading": "Error",
+    "orderType": "Order type",
+    "orderTypeDineIn": "Dine-in",
+    "orderTypeTakeaway": "Takeaway",
+    "orderTypeDelivery": "Delivery",
+    "cartEmptyTitle": "Cart is empty",
+    "cartEmptySubtitle": "Tap a product to add it",
+    "subtotal": "Subtotal",
+    "tax": "Tax",
+    "total": "Total",
+    "clearCart": "Clear cart",
+    "holdOrder": "Hold",
+    "checkout": "Pay",
+    "addedToCart": "Added {product} to cart",
+    "orderHeld": "Order held",
+    "paymentDialogTitle": "Processing payment",
+    "paymentDialogBody": "Payment processing will be available soon",
+    "language": "Language",
+    "languageEnglish": "English",
+    "languageArabic": "Arabic",
+    "activeOffers": "Active offers",
+    "offlineModeTitle": "Offline mode",
+    "offlineModeSubtitle": "Orders are saved locally and will sync automatically once you reconnect.",
+    "pendingOrdersLabel": "{count} order(s) waiting to sync",
+    "syncInProgress": "Syncing {count} pending order(s)…",
+    "syncPending": "{count} pending order(s) queued",
+    "syncErrorStatus": "Sync failed • {count} order(s) still pending",
+    "lastSyncedAt": "Last synced {time}",
+    "receiptCompact": "Compact receipt",
+    "receiptFull": "Full receipt",
+    "receiptPrinted": "Receipt sent to printer",
+    "printError": "Couldn't print receipt",
+    "orderQueued": "Order saved for sync (ref #{reference})",
+    "orderSynced": "Order #{order} created successfully"
+  },
+  "customer": {
+    "common": {
+      "viewAll": "View all",
+      "errorLoading": "We couldn't load this section",
+      "loading": "Loading…",
+      "retry": "Retry",
+      "close": "Close",
+      "minutes": "min",
+      "startTyping": "Start typing to search"
+    },
+    "nav": {
+      "home": "Home",
+      "search": "Search",
+      "orders": "Orders",
+      "profile": "Profile"
+    },
+    "home": {
+      "greeting": "Welcome back",
+      "subtitle": "Discover dishes and offers near you",
+      "searchPlaceholder": "Search for restaurants or dishes",
+      "featuredTitle": "Featured restaurants",
+      "popularTitle": "Popular right now",
+      "nearbyTitle": "Near you",
+      "recommendedTitle": "Recommended for you",
+      "checkoutButton": "Checkout • {total}"
+    },
+    "cart": {
+      "items": "Items: {count}"
+    },
+    "loyalty": {
+      "title": "Loyalty",
+      "points": "Points",
+      "tier": "Tier",
+      "progress": "Just {points} points away from the next tier"
+    },
+    "restaurant": {
+      "eta": "{time} min",
+      "etaShort": "{time} min",
+      "freeDelivery": "Free delivery",
+      "aboutTitle": "About this restaurant",
+      "address": "Address",
+      "phone": "Phone",
+      "hours": "Opening hours",
+      "paymentMethods": "Accepted payments",
+      "chefNotes": "Chef's notes",
+      "distance": "{distance} km away",
+      "addToCart": "Add",
+      "viewCart": "View cart",
+      "quantity": "Quantity",
+      "addedToCart": "{product} added to cart",
+      "addItemButton": "Add for {price}"
+    },
+    "checkout": {
+      "title": "Checkout",
+      "fulfilment": "Fulfilment",
+      "schedule": "Schedule",
+      "summary": "Order summary",
+      "payment": "Payment",
+      "notesLabel": "Notes",
+      "notesHint": "Any special instructions?",
+      "suggestions": "You might also like",
+      "placeOrderButton": "Place order • {total}",
+      "success": "Order placed successfully",
+      "error": "We couldn't place the order ({error})",
+      "addAddressTitle": "Add delivery address",
+      "addAddressBody": "Address management will be available soon. Please use an existing location."
+    },
+    "order": {
+      "appBar": "Order {id}",
+      "timelineTitle": "Order progress",
+      "inProgress": "In progress",
+      "mapPlaceholder": "Driver location",
+      "detailsTitle": "Order details",
+      "orderId": "Order",
+      "totalAmount": "Total",
+      "deliveryAddress": "Delivery address",
+      "paymentMethod": "Payment",
+      "paymentPending": "Pending",
+      "itemsHeading": "Items",
+      "driverTitle": "Driver",
+      "driverUnknown": "Unassigned",
+      "callDriver": "Call",
+      "chatDriver": "Chat",
+      "supportTitle": "Need help?",
+      "supportBody": "Our support team will contact the restaurant and driver for you.",
+      "status": {
+        "placed": "Order placed",
+        "confirmed": "Restaurant confirmed",
+        "preparing": "Preparing your dishes",
+        "driverAssigned": "Driver assigned",
+        "onTheWay": "On the way",
+        "delivered": "Delivered",
+        "cancelled": "Cancelled"
+      }
+    },
+    "profile": {
+      "title": "Account",
+      "loyaltyHeading": "Loyalty overview",
+      "points": "Points: {points}",
+      "tier": "Tier: {tier}",
+      "addresses": "Saved addresses",
+      "payments": "Payment methods",
+      "preferences": "Preferences",
+      "signOut": "Sign out"
+    },
+    "search": {
+      "placeholder": "Search menu",
+      "startTyping": "Search menu",
+      "noResults": "No results for {query}"
+    }
+  }
+}

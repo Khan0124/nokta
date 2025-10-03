@@ -1,6 +1,26 @@
 const Joi = require('joi');
 const { logger } = require('../config/logger');
 
+const validateDateRange = (value, helpers) => {
+  const { startDate, endDate } = value;
+
+  if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+    return helpers.error('date.max', { key: 'endDate', limit: startDate });
+  }
+
+  return value;
+};
+
+const validateScheduleWindow = (value, helpers) => {
+  const { startAt, endAt } = value;
+
+  if (startAt && endAt && new Date(startAt) > new Date(endAt)) {
+    return helpers.error('date.max', { key: 'endAt', limit: startAt });
+  }
+
+  return value;
+};
+
 // Common validation schemas
 const commonSchemas = {
   id: Joi.number().integer().positive().required(),
@@ -122,6 +142,33 @@ const tenantSchemas = {
     subscriptionExpires: commonSchemas.date.optional(),
     settings: commonSchemas.json.optional(),
     status: Joi.string().valid('active', 'suspended', 'cancelled').optional()
+  }),
+
+  onboardingStart: Joi.object({
+    companyName: commonSchemas.name,
+    contactName: commonSchemas.name,
+    contactEmail: commonSchemas.email,
+    contactPhone: commonSchemas.phone.required(),
+    preferredLanguage: Joi.string().valid('ar', 'en').default('ar'),
+    subscriptionPlan: Joi.string().valid('basic', 'pro', 'premium').default('basic'),
+    source: Joi.string().max(100).optional(),
+    estimatedPosDevices: Joi.number().integer().min(1).max(50).optional(),
+    notes: Joi.string().max(500).allow('', null)
+  }),
+
+  onboardingToken: Joi.object({
+    token: commonSchemas.uuid
+  }),
+
+  onboardingStepSubmission: Joi.object({
+    stepKey: Joi.string().valid('company_profile', 'branch_setup', 'owner_account', 'billing_preferences').required(),
+    payload: Joi.object().unknown(true).default({}),
+    status: Joi.string().valid('pending', 'in_progress', 'completed', 'skipped').default('completed')
+  }),
+
+  onboardingCompletion: Joi.object({
+    acceptTerms: Joi.boolean().valid(true).required(),
+    billingCycle: Joi.string().valid('monthly', 'yearly').optional()
   })
 };
 
@@ -263,6 +310,275 @@ const orderSchemas = {
   })
 };
 
+// Call center validation schemas
+const callCenterSchemas = {
+  search: commonSchemas.pagination.keys({
+    q: Joi.string().min(2).max(100).required(),
+    includeHistory: Joi.boolean().default(true),
+    tenantId: commonSchemas.id.optional(),
+    phoneOnly: Joi.boolean().default(false)
+  }),
+
+  logCall: Joi.object({
+    phone: commonSchemas.phone.required(),
+    startedAt: Joi.date().iso().required(),
+    endedAt: Joi.date().iso().min(Joi.ref('startedAt')).optional(),
+    waitTimeSeconds: Joi.number().integer().min(0).default(0),
+    handleTimeSeconds: Joi.number().integer().min(0).optional(),
+    status: Joi.string().valid('queued', 'active', 'completed', 'abandoned', 'scheduled').default('completed'),
+    disposition: Joi.string().valid('completed', 'callback', 'voicemail', 'abandoned', 'spam', 'wrong_number').default('completed'),
+    notes: Joi.string().max(1000).allow('', null),
+    customerId: commonSchemas.id.optional(),
+    orderId: commonSchemas.id.optional(),
+    tags: Joi.array().items(Joi.string().max(50)).max(10).default([])
+  }),
+
+  createOrder: Joi.object({
+    customer: Joi.object({
+      id: commonSchemas.id.optional(),
+      fullName: Joi.string().min(2).max(255).required(),
+      phone: commonSchemas.phone.required(),
+      alternatePhone: commonSchemas.phone.optional(),
+      email: commonSchemas.email.optional(),
+      addressId: commonSchemas.id.optional(),
+      addressLine1: Joi.string().max(255).optional(),
+      addressLine2: Joi.string().max(255).allow('', null),
+      city: Joi.string().max(120).allow('', null),
+      latitude: Joi.number().min(-90).max(90).optional(),
+      longitude: Joi.number().min(-180).max(180).optional(),
+      notes: Joi.string().max(500).allow('', null)
+    }).required(),
+    items: Joi.array().items(Joi.object({
+      productId: commonSchemas.id.required(),
+      name: Joi.string().max(255).required(),
+      quantity: commonSchemas.quantity.required(),
+      unitPrice: commonSchemas.amount.required(),
+      discount: commonSchemas.amount.default(0),
+      modifiers: Joi.array().items(Joi.object({
+        name: Joi.string().max(100).required(),
+        price: commonSchemas.amount.default(0)
+      })).default([]),
+      notes: Joi.string().max(255).allow('', null)
+    })).min(1).required(),
+    delivery: Joi.object({
+      type: Joi.string().valid('delivery', 'pickup').default('delivery'),
+      addressLine1: Joi.string().max(255).optional(),
+      addressLine2: Joi.string().max(255).allow('', null),
+      city: Joi.string().max(120).allow('', null),
+      latitude: Joi.number().min(-90).max(90).optional(),
+      longitude: Joi.number().min(-180).max(180).optional(),
+      notes: Joi.string().max(500).allow('', null),
+      scheduledAt: Joi.date().iso().optional()
+    }).default({ type: 'delivery' }),
+    payment: Joi.object({
+      method: Joi.string().valid('cash', 'card', 'mobile_money', 'bank_transfer').required(),
+      status: Joi.string().valid('pending', 'paid', 'failed').default('pending'),
+      amountDue: commonSchemas.amount.required(),
+      tipAmount: commonSchemas.amount.default(0),
+      collectOnDelivery: Joi.boolean().default(true)
+    }).required(),
+    metadata: Joi.object({
+      notes: Joi.string().max(1000).allow('', null),
+      channel: Joi.string().max(50).default('call_center'),
+      priority: Joi.string().valid('normal', 'high', 'vip').default('normal'),
+      source: Joi.string().max(50).default('call_center')
+    }).default({ channel: 'call_center', priority: 'normal', source: 'call_center' }),
+    branchId: commonSchemas.id.optional(),
+    tenantId: commonSchemas.id.optional(),
+    campaignCode: Joi.string().max(50).allow('', null)
+  }),
+
+  dashboard: Joi.object({
+    tenantId: commonSchemas.id.optional(),
+    branchId: commonSchemas.id.optional(),
+    range: Joi.string().valid('today', '7d', '30d').default('today')
+  }),
+
+  recentCalls: commonSchemas.pagination.keys({
+    tenantId: commonSchemas.id.optional(),
+    branchId: commonSchemas.id.optional()
+  })
+}
+
+const billingSchemas = {
+  createSubscription: Joi.object({
+    planId: Joi.string().valid('basic', 'pro', 'premium').required(),
+    billingCycle: Joi.string().valid('monthly', 'yearly').required(),
+    seats: Joi.number().integer().min(1).default(1),
+    paymentMethod: Joi.string().valid('card', 'bank_transfer', 'cash').required(),
+    trialEndsAt: Joi.date().iso().greater('now').optional(),
+    notes: Joi.string().max(500).allow('', null)
+  }),
+
+  updateSubscription: Joi.object({
+    planId: Joi.string().valid('basic', 'pro', 'premium').optional(),
+    billingCycle: Joi.string().valid('monthly', 'yearly').optional(),
+    seats: Joi.number().integer().min(1).optional(),
+    status: Joi.string().valid('active', 'past_due', 'suspended', 'cancelled').optional(),
+    resumeAt: Joi.date().iso().optional(),
+    notes: Joi.string().max(500).allow('', null)
+  }).min(1),
+
+  invoiceGenerate: Joi.object({
+    periodStart: Joi.date().iso().required(),
+    periodEnd: Joi.date().iso().greater(Joi.ref('periodStart')).required(),
+    dueDate: Joi.date().iso().min(Joi.ref('periodStart')).optional(),
+    issueDate: Joi.date().iso().optional(),
+    currency: Joi.string().length(3).uppercase().default('USD'),
+    items: Joi.array()
+      .items(
+        Joi.object({
+          description: Joi.string().max(255).required(),
+          quantity: Joi.number().integer().min(1).default(1),
+          unitPrice: commonSchemas.amount,
+          taxRate: commonSchemas.percentage.default(0)
+        })
+      )
+      .min(1)
+      .required(),
+    notes: Joi.string().max(1000).allow('', null)
+  }).custom(validateDateRange),
+
+  recordPayment: Joi.object({
+    amount: commonSchemas.amount,
+    currency: Joi.string().length(3).uppercase().default('USD'),
+    provider: Joi.string().valid('stripe', 'local_bank', 'cash').required(),
+    reference: Joi.string().max(100).required(),
+    status: Joi.string().valid('pending', 'succeeded', 'failed', 'refunded').default('pending'),
+    paidAt: Joi.date().iso().optional(),
+    metadata: commonSchemas.json.optional()
+  }),
+
+  webhook: Joi.object({
+    provider: Joi.string().valid('stripe', 'local_bank').required(),
+    eventType: Joi.string().max(100).required(),
+    data: Joi.object().required()
+  })
+};
+
+const dynamicPricingSchemas = {
+  list: Joi.object({
+    branchId: commonSchemas.id.optional(),
+    includeExpired: Joi.boolean().default(false)
+  }),
+
+  create: Joi.object({
+    id: Joi.string().optional(),
+    name: Joi.string().max(120).required(),
+    description: commonSchemas.description,
+    type: Joi.string().valid('percentage', 'fixed', 'availability').default('percentage'),
+    value: Joi.when('type', {
+      is: 'percentage',
+      then: Joi.number().precision(2).min(-100).max(100).required(),
+      otherwise: Joi.number().precision(2).min(-100).max(100).optional()
+    }),
+    fixedPrice: Joi.when('type', {
+      is: 'fixed',
+      then: Joi.number().precision(2).min(0).required(),
+      otherwise: Joi.number().precision(2).min(0).optional()
+    }),
+    productIds: Joi.array().items(commonSchemas.id).min(1).required(),
+    branchIds: Joi.array().items(commonSchemas.id).default([]),
+    channels: Joi.array()
+      .items(Joi.string().valid('pos', 'customer', 'delivery'))
+      .default(['pos'])
+      .min(1),
+    priority: Joi.number().integer().min(0).default(100),
+    stackable: Joi.boolean().default(false),
+    startAt: Joi.date().iso().allow(null),
+    endAt: Joi.date().iso().allow(null),
+    status: Joi.string().valid('scheduled', 'active', 'disabled', 'archived').default('scheduled')
+  }).custom(validateScheduleWindow),
+
+  update: Joi.object({
+    name: Joi.string().max(120).optional(),
+    description: commonSchemas.description,
+    type: Joi.string().valid('percentage', 'fixed', 'availability').optional(),
+    value: Joi.number().precision(2).min(-100).max(100).optional(),
+    fixedPrice: Joi.number().precision(2).min(0).optional(),
+    productIds: Joi.array().items(commonSchemas.id).min(1).optional(),
+    branchIds: Joi.array().items(commonSchemas.id).optional(),
+    channels: Joi.array().items(Joi.string().valid('pos', 'customer', 'delivery')).optional(),
+    priority: Joi.number().integer().min(0).optional(),
+    stackable: Joi.boolean().optional(),
+    startAt: Joi.date().iso().allow(null),
+    endAt: Joi.date().iso().allow(null),
+    status: Joi.string().valid('scheduled', 'active', 'disabled', 'archived').optional()
+  })
+    .custom(validateScheduleWindow)
+    .min(1),
+
+  evaluate: Joi.object({
+    productId: commonSchemas.id.required(),
+    basePrice: Joi.number().precision(2).min(0).required(),
+    branchId: commonSchemas.id.optional(),
+    channel: Joi.string().valid('pos', 'customer', 'delivery').default('pos'),
+    now: Joi.date().iso().optional()
+  })
+};
+
+const featureFlagSchemas = {
+  list: Joi.object({
+    scope: Joi.string().valid('tenant', 'global').default('tenant'),
+    tenantId: commonSchemas.id.optional(),
+    includeMetadata: Joi.boolean().default(false),
+    branchId: Joi.alternatives().try(commonSchemas.id, Joi.string().max(64)).optional(),
+    role: Joi.string().max(64).optional(),
+    userId: Joi.alternatives().try(commonSchemas.id, Joi.string().max(64)).optional()
+  }),
+
+  scope: Joi.object({
+    scope: Joi.string().valid('tenant', 'global').default('tenant'),
+    tenantId: commonSchemas.id.optional()
+  }),
+
+  update: Joi.object({
+    enabled: Joi.boolean().required(),
+    rollout: Joi.object({
+      strategy: Joi.string().valid('all', 'percentage', 'roles', 'branches').default('all'),
+      percentage: Joi.number()
+        .integer()
+        .min(0)
+        .max(100)
+        .when('strategy', { is: 'percentage', then: Joi.required(), otherwise: Joi.forbidden() }),
+      roles: Joi.array()
+        .items(Joi.string().max(64))
+        .when('strategy', { is: 'roles', then: Joi.min(1).required(), otherwise: Joi.forbidden() }),
+      branches: Joi.array()
+        .items(commonSchemas.id)
+        .when('strategy', { is: 'branches', then: Joi.min(1).required(), otherwise: Joi.forbidden() }),
+      segment: Joi.string().max(64).optional()
+    }).default({ strategy: 'all' }),
+    notes: Joi.string().max(500).allow('', null)
+  })
+};
+;
+
+const adminDashboardSchemas = {
+  overviewQuery: Joi.object({
+    branchId: commonSchemas.id.optional(),
+    startDate: Joi.date().iso().max('now').optional(),
+    endDate: Joi.date().iso().max('now').optional()
+  }).custom(validateDateRange),
+  trendQuery: Joi.object({
+    branchId: commonSchemas.id.optional(),
+    startDate: Joi.date().iso().max('now').optional(),
+    endDate: Joi.date().iso().max('now').optional(),
+    granularity: Joi.string().valid('hour', 'day', 'week', 'month').default('day')
+  }).custom(validateDateRange),
+  driverQuery: Joi.object({
+    branchId: commonSchemas.id.optional(),
+    startDate: Joi.date().iso().max('now').optional(),
+    endDate: Joi.date().iso().max('now').optional()
+  }).custom(validateDateRange),
+  reportQuery: Joi.object({
+    branchId: commonSchemas.id.optional(),
+    startDate: Joi.date().iso().max('now').optional(),
+    endDate: Joi.date().iso().max('now').optional(),
+    type: Joi.string().valid('overview', 'sales', 'orders', 'drivers').default('overview')
+  }).custom(validateDateRange)
+};
+
 // Category validation schemas
 const categorySchemas = {
   create: Joi.object({
@@ -379,6 +695,11 @@ module.exports = {
     product: productSchemas,
     order: orderSchemas,
     category: categorySchemas,
+    callCenter: callCenterSchemas,
+    adminDashboard: adminDashboardSchemas,
+    billing: billingSchemas,
+    dynamicPricing: dynamicPricingSchemas,
+    featureFlags: featureFlagSchemas,
     file: fileSchemas
   }
 };
