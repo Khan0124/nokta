@@ -1,113 +1,87 @@
-// apps/customer_app/lib/screens/order/order_tracking_screen.dart
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nokta_core/nokta_core.dart';
 
-class OrderTrackingScreen extends ConsumerStatefulWidget {
-  final int orderId;
+import '../../providers/customer_app_providers.dart';
 
+class OrderTrackingScreen extends ConsumerWidget {
   const OrderTrackingScreen({super.key, required this.orderId});
 
-  @override
-  ConsumerState<OrderTrackingScreen> createState() =>
-      _OrderTrackingScreenState();
-}
-
-class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
-  StreamSubscription? _orderSubscription;
-  StreamSubscription? _driverLocationSubscription;
+  final int orderId;
 
   @override
-  void initState() {
-    super.initState();
-    _subscribeToOrderUpdates();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final orderAsync = ref.watch(orderDetailProvider(orderId));
+    final timeline = ref.watch(orderTimelineProvider(orderId));
+    final driverInfo = ref.watch(driverSummaryProvider(orderId));
+    final driverRoute = ref.watch(driverRouteProvider(orderId));
+
+    return orderAsync.when(
+      data: (order) {
+        final currentStage = timeline.maybeWhen(
+          data: (update) => update.stage,
+          orElse: () => OrderTrackingStage.placed,
+        );
+        final driverPosition = driverRoute.asData?.value;
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(l10n.translate('customer.order.appBar', params: {'id': '#${order.id}'})),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.help_outline),
+                onPressed: () => _showSupportDialog(context),
+              ),
+            ],
+          ),
+          body: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              OrderStatusTimeline(currentStage: currentStage),
+              const SizedBox(height: 16),
+              OrderTrackingMap(
+                driverLat: driverPosition?.latitude,
+                driverLng: driverPosition?.longitude,
+              ),
+              const SizedBox(height: 16),
+              OrderDetailsCard(order: order),
+              const SizedBox(height: 16),
+              driverInfo.when(
+                data: (driver) => DriverInfoCard(driver: driver),
+                loading: () => const LoadingScreen(),
+                error: (error, stack) => ErrorScreen(
+                  message: '$error',
+                  onRetry: () => ref.refresh(driverSummaryProvider(orderId)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => const Scaffold(body: LoadingScreen()),
+      error: (error, stack) => Scaffold(
+        body: ErrorScreen(
+          message: '$error',
+          onRetry: () => ref.refresh(orderDetailProvider(orderId)),
+        ),
+      ),
+    );
   }
 
-  void _subscribeToOrderUpdates() {
-    final realtimeService = ref.read(realtimeServiceProvider);
-    realtimeService.connectToOrder(widget.orderId.toString());
-
-    _orderSubscription = realtimeService
-        .getOrderUpdates(widget.orderId.toString())
-        .listen((update) {
-      // TODO: Update order state
-      print('Order update: $update');
-    });
-  }
-
-  void _showSupportDialog() {
-    showDialog(
+  void _showSupportDialog(BuildContext context) {
+    final l10n = context.l10n;
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Support'),
-        content: const Text('Contact support for help with your order.'),
+        title: Text(l10n.translate('customer.order.supportTitle')),
+        content: Text(l10n.translate('customer.order.supportBody')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: Text(l10n.translate('customer.common.close')),
           ),
         ],
       ),
     );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final orderAsync = ref.watch(orderProvider);
-    final driverLocationAsync = ref.watch(driverLocationProvider);
-
-    return orderAsync.when(
-      data: (order) => Scaffold(
-        appBar: AppBar(
-          title: Text('Order #${order['id']}'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.help),
-              onPressed: () => _showSupportDialog(),
-            ),
-          ],
-        ),
-        body: Column(
-          children: [
-            // Order Status Timeline
-            OrderStatusTimeline(
-              currentStatus: order['status'] ?? 'preparing',
-            ),
-
-            // Map (for delivery orders)
-            if (order['type'] == 'delivery')
-              Expanded(
-                child: OrderTrackingMap(
-                  driverLat: driverLocationAsync.value?['latitude'],
-                  driverLng: driverLocationAsync.value?['longitude'],
-                ),
-              ),
-
-            // Order Details
-            OrderDetailsCard(order: order),
-
-            // Driver Info (if assigned)
-            if (order['driver'] != null)
-              DriverInfoCard(
-                driver: order['driver']!,
-              ),
-          ],
-        ),
-      ),
-      loading: () => const LoadingScreen(),
-      error: (error, stack) => ErrorScreen(
-        message: 'Error loading order: $error',
-        onRetry: () => ref.refresh(orderProvider),
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _orderSubscription?.cancel();
-    _driverLocationSubscription?.cancel();
-    super.dispose();
   }
 }

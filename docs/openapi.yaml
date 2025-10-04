@@ -1,0 +1,512 @@
+openapi: 3.0.3
+info:
+  title: Nokta Platform API
+  version: 1.0.0
+  description: >-
+    Consolidated API surface for Nokta POS, call center, billing, feature flag, and onboarding services.
+servers:
+  - url: https://api.nokta-pos.com/api/v1
+    description: Production
+  - url: http://localhost:3001/api/v1
+    description: Local development
+security:
+  - bearerAuth: []
+  - TenantHeader: []
+paths:
+  /auth/login:
+    post:
+      summary: Authenticate a user
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Authenticated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  refreshToken:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Invalid credentials
+  /call-center/queue:
+    get:
+      summary: Fetch the current call queue snapshot
+      tags: [Call Center]
+      parameters:
+        - in: query
+          name: tenantId
+          schema:
+            type: integer
+          required: false
+          description: Override tenant context when requesting cross-tenant insights
+      responses:
+        '200':
+          description: Active and waiting calls
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenantId:
+                    type: integer
+                  count:
+                    type: integer
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CallQueueEntry'
+        '403':
+          description: Feature flag disabled
+  /call-center/dashboard:
+    get:
+      summary: Retrieve live KPIs for the call center
+      tags: [Call Center]
+      parameters:
+        - $ref: '#/components/parameters/Range'
+        - $ref: '#/components/parameters/BranchId'
+      responses:
+        '200':
+          description: KPI payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CallCenterMetrics'
+  /billing/plans:
+    get:
+      summary: List available subscription plans
+      tags: [Billing]
+      responses:
+        '200':
+          description: Plan catalog
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BillingPlan'
+  /billing/subscriptions:
+    post:
+      summary: Create or update a tenant subscription
+      tags: [Billing]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriptionUpsert'
+      responses:
+        '201':
+          description: Subscription created
+        '200':
+          description: Subscription updated
+  /feature-flags:
+    get:
+      summary: List feature flags and evaluation results
+      tags: [Feature Flags]
+      parameters:
+        - in: query
+          name: includeMetadata
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Feature flags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FeatureFlag'
+  /feature-flags/{key}:
+    patch:
+      summary: Update a feature flag override
+      tags: [Feature Flags]
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeatureFlagOverride'
+      responses:
+        '200':
+          description: Override stored
+  /pricing/dynamic/adjustments:
+    get:
+      summary: List dynamic pricing adjustments
+      tags: [Dynamic Pricing]
+      parameters:
+        - in: query
+          name: channel
+          schema:
+            type: string
+        - $ref: '#/components/parameters/BranchId'
+      responses:
+        '200':
+          description: Active adjustments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DynamicAdjustment'
+  /admin/dashboard/pricing/adoption:
+    get:
+      summary: Retrieve dynamic pricing adoption metrics
+      tags: [Admin Dashboard]
+      parameters:
+        - $ref: '#/components/parameters/BranchId'
+        - $ref: '#/components/parameters/StartDate'
+        - $ref: '#/components/parameters/EndDate'
+      responses:
+        '200':
+          description: Adoption metrics for the requested range
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/DynamicPricingAdoption'
+                  filters:
+                    type: object
+                    additionalProperties: true
+                  generatedAt:
+                    type: string
+                    format: date-time
+  /tenants/onboarding:
+    post:
+      summary: Start a tenant onboarding session
+      tags: [Tenant Onboarding]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OnboardingStart'
+      responses:
+        '201':
+          description: Session started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnboardingSession'
+  /tenants/onboarding/{token}:
+    patch:
+      summary: Update an onboarding session step
+      tags: [Tenant Onboarding]
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OnboardingStepUpdate'
+      responses:
+        '200':
+          description: Session updated
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    TenantHeader:
+      type: apiKey
+      in: header
+      name: X-Tenant-ID
+  parameters:
+    Range:
+      in: query
+      name: range
+      schema:
+        type: string
+        enum: [today, 7d, 30d]
+    BranchId:
+      in: query
+      name: branchId
+      schema:
+        type: integer
+    StartDate:
+      in: query
+      name: startDate
+      schema:
+        type: string
+        format: date-time
+      description: Optional ISO-8601 start date filter.
+    EndDate:
+      in: query
+      name: endDate
+      schema:
+        type: string
+        format: date-time
+      description: Optional ISO-8601 end date filter.
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        role:
+          type: string
+    CallQueueEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        callerNumber:
+          type: string
+        displayName:
+          type: string
+        priority:
+          type: integer
+        status:
+          type: string
+        waitingSince:
+          type: string
+          format: date-time
+        customerId:
+          type: integer
+          nullable: true
+        lastOrderId:
+          type: integer
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        preferredBranchId:
+          type: integer
+          nullable: true
+        loyaltyPoints:
+          type: integer
+        lastOrderAt:
+          type: string
+          format: date-time
+          nullable: true
+    CallCenterMetrics:
+      type: object
+      properties:
+        queueLength:
+          type: integer
+        activeCalls:
+          type: integer
+        averageWaitTimeSeconds:
+          type: integer
+        slaBreaches:
+          type: integer
+        ordersCreated:
+          type: integer
+        serviceLevelAchievement:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+    BillingPlan:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        monthlyPrice:
+          type: number
+          format: float
+        annualPrice:
+          type: number
+          format: float
+        limits:
+          type: object
+          additionalProperties:
+            type: integer
+    SubscriptionUpsert:
+      type: object
+      required: [tenantId, planId, billingCycle]
+      properties:
+        tenantId:
+          type: integer
+        planId:
+          type: string
+        billingCycle:
+          type: string
+          enum: [monthly, annual]
+        seats:
+          type: integer
+        paymentMethodId:
+          type: string
+    FeatureFlag:
+      type: object
+      properties:
+        key:
+          type: string
+        description:
+          type: string
+        enabled:
+          type: boolean
+        evaluation:
+          type: boolean
+        rollout:
+          type: object
+        tags:
+          type: array
+          items:
+            type: string
+        defaultEnabled:
+          type: boolean
+    FeatureFlagOverride:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        rollout:
+          type: object
+          properties:
+            strategy:
+              type: string
+            percentage:
+              type: integer
+            roles:
+              type: array
+              items:
+                type: string
+    DynamicAdjustment:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        value:
+          type: number
+        fixedPrice:
+          type: number
+        channels:
+          type: array
+          items:
+            type: string
+        branchIds:
+          type: array
+          items:
+            type: integer
+        status:
+          type: string
+    DynamicPricingAdoption:
+      type: object
+      properties:
+        summary:
+          type: object
+          properties:
+            totalOrders:
+              type: integer
+            discountedOrders:
+              type: integer
+            adoptionRate:
+              type: number
+              format: float
+              description: Percentage of orders impacted by dynamic pricing.
+            totalDiscountValue:
+              type: number
+              format: float
+            averageDiscount:
+              type: number
+              format: float
+            influencedRevenue:
+              type: number
+              format: float
+        adjustments:
+          type: object
+          properties:
+            total:
+              type: integer
+            byStatus:
+              type: object
+              additionalProperties:
+                type: integer
+            channelCoverage:
+              type: object
+              additionalProperties:
+                type: integer
+        trends:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+              orders:
+                type: integer
+              discountedOrders:
+                type: integer
+              discounts:
+                type: number
+                format: float
+              influencedRevenue:
+                type: number
+                format: float
+        range:
+          type: object
+          properties:
+            start:
+              type: string
+            end:
+              type: string
+    OnboardingStart:
+      type: object
+      required: [companyName, adminEmail]
+      properties:
+        companyName:
+          type: string
+        adminEmail:
+          type: string
+          format: email
+        phone:
+          type: string
+    OnboardingSession:
+      type: object
+      properties:
+        token:
+          type: string
+        tenantId:
+          type: integer
+        expiresAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+    OnboardingStepUpdate:
+      type: object
+      properties:
+        step:
+          type: string
+        payload:
+          type: object

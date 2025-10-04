@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nokta_core/nokta_core.dart';
 
-// apps/customer_app/lib/screens/checkout/checkout_screen.dart
+import '../../providers/customer_app_providers.dart';
+
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
 
@@ -19,122 +21,160 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final cart = ref.watch(cartProvider);
     final addresses = ref.watch(customerAddressesProvider);
+    final suggestions = ref.watch(cartSuggestionsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Checkout')),
+      appBar: AppBar(title: Text(l10n.translate('customer.checkout.title'))),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Order Type Selection
+            Text(l10n.translate('customer.checkout.fulfilment'),
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
             OrderTypeSelector(
               selectedType: _orderType,
               availableTypes: const [
-                OrderType.dineIn,
+                OrderType.delivery,
                 OrderType.takeaway,
-                OrderType.delivery
               ],
               onChanged: (type) => setState(() => _orderType = type),
             ),
-
-            // Delivery Address (if delivery)
             if (_orderType == OrderType.delivery) ...[
-              const SizedBox(height: 24),
-              AddressSelector(
-                addresses: addresses.value ?? [],
-                selectedAddress: _selectedAddress,
-                onSelected: (address) =>
-                    setState(() => _selectedAddress = address),
-                onAddNew: () => _showAddAddressDialog(),
+              const SizedBox(height: 20),
+              _AsyncSection<List<CustomerAddress>>(
+                value: addresses,
+                builder: (items) => AddressSelector(
+                  addresses: items,
+                  selectedAddress: _selectedAddress,
+                  onSelected: (address) => setState(() => _selectedAddress = address),
+                  onAddNew: () => _showAddAddressDialog(),
+                ),
               ),
             ],
-
-            // Schedule Time
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+            Text(l10n.translate('customer.checkout.schedule'),
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
             ScheduleTimeSelector(
               selectedTime: _scheduledTime,
               onChanged: (time) => setState(() => _scheduledTime = time),
             ),
-
-            // Order Summary
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+            Text(l10n.translate('customer.checkout.summary'),
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
             OrderSummaryCard(cart: cart),
-
-            // Payment Method
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+            Text(l10n.translate('customer.checkout.payment'),
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
             PaymentMethodSelector(
               selectedMethod: _paymentMethod,
-              availableMethods: _getAvailablePaymentMethods(),
+              availableMethods: const [
+                PaymentMethod.cash,
+                PaymentMethod.card,
+                PaymentMethod.mobilePayment,
+              ],
               onChanged: (method) => setState(() => _paymentMethod = method),
             ),
-
-            // Notes
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             TextField(
               controller: _notesController,
-              decoration: const InputDecoration(
-                labelText: 'Notes',
-                hintText: 'Any special instructions?',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.translate('customer.checkout.notesLabel'),
+                hintText: l10n.translate('customer.checkout.notesHint'),
+                border: const OutlineInputBorder(),
               ),
               maxLines: 3,
             ),
+            const SizedBox(height: 20),
+            Text(l10n.translate('customer.checkout.suggestions'),
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+            _AsyncSection<List<CartItem>>(
+              value: suggestions,
+              builder: (items) => Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: items
+                    .map(
+                      (item) => ActionChip(
+                        label: Text(item.product.name),
+                        avatar: const Icon(Icons.add_circle_outline),
+                        onPressed: () => ref
+                            .read(cartProvider.notifier)
+                            .addItem(item.product),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+            const SizedBox(height: 24),
           ],
         ),
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: ElevatedButton(
-            onPressed: _canPlaceOrder() ? _placeOrder : null,
+          child: ElevatedButton.icon(
+            onPressed: _canPlaceOrder(cart)
+                ? () => _placeOrder(cart)
+                : null,
+            icon: const Icon(Icons.lock_clock),
+            label: Text(l10n.translate('customer.checkout.placeOrderButton',
+                params: {'total': l10n.formatCurrency(cart.total)})),
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(double.infinity, 56),
             ),
-            child: Text('Place Order - ${formatCurrency(cart.total)}'),
           ),
         ),
       ),
     );
   }
 
-  bool _canPlaceOrder() {
+  bool _canPlaceOrder(CartState cart) {
+    if (cart.items.isEmpty) return false;
     if (_orderType == OrderType.delivery && _selectedAddress == null) {
       return false;
     }
     return true;
   }
 
-  Future<void> _placeOrder() async {
+  Future<void> _placeOrder(CartState cart) async {
+    final l10n = context.l10n;
+    final cartNotifier = ref.read(cartProvider.notifier);
     try {
-      // Create order using the cart provider's checkout method
-      final order = await ref.read(cartProvider.notifier).checkout(
-            tenantId: 1, // Default tenant ID
-            branchId: 1, // Default branch ID
-            customerId: 1, // Default customer ID
-            orderType: _orderType,
-            deliveryAddress: _selectedAddress?.address,
-            scheduledTime: _scheduledTime,
-            notes: _notesController.text,
-          );
+      final order = await cartNotifier.checkout(
+        tenantId: 1,
+        branchId: 1,
+        customerId: ref.read(currentCustomerIdProvider),
+        orderType: _orderType,
+        deliveryAddress: _selectedAddress?.address,
+        scheduledTime: _scheduledTime,
+        notes: _notesController.text,
+      );
 
-      // Show success message
+      cartNotifier.updateOrderAfterPayment(order, _paymentMethod);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Order placed successfully! Order ID: ${order.id}'),
+            content: Text(l10n.translate('customer.checkout.success')),
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.of(context).pop();
+        context.go('/order/${order.id == 0 ? 1001 : order.id}');
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to place order: $e'),
+            content: Text(l10n.translate('customer.checkout.error', params: {'error': '$e'})),
             backgroundColor: Colors.red,
           ),
         );
@@ -142,19 +182,44 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
   }
 
-  List<PaymentMethod> _getAvailablePaymentMethods() {
-    return [
-      PaymentMethod.cash,
-      PaymentMethod.card,
-      PaymentMethod.mobilePayment,
-    ];
+  void _showAddAddressDialog() {
+    final l10n = context.l10n;
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.translate('customer.checkout.addAddressTitle')),
+        content: Text(l10n.translate('customer.checkout.addAddressBody')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.translate('customer.common.close')),
+          ),
+        ],
+      ),
+    );
   }
 
-  void _showAddAddressDialog() {
-    // TODO: Implement add address dialog
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Add address functionality coming soon!'),
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+}
+
+class _AsyncSection<T> extends StatelessWidget {
+  const _AsyncSection({required this.value, required this.builder});
+
+  final AsyncValue<T> value;
+  final Widget Function(T data) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    return value.when(
+      data: builder,
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Text(
+        context.l10n.translate('customer.common.errorLoading'),
+        style: TextStyle(color: Theme.of(context).colorScheme.error),
       ),
     );
   }

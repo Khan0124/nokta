@@ -98,6 +98,65 @@ services:
     networks:
       - nokta_network
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: nokta_prometheus_dev
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - nokta_network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: nokta_grafana_dev
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards
+    depends_on:
+      - prometheus
+    networks:
+      - nokta_network
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: nokta_node_exporter
+    restart: always
+    pid: host
+    network_mode: host
+    command:
+      - '--path.rootfs=/host'
+    volumes:
+      - /:/host:ro,rslave
+    profiles:
+      - monitoring
+
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: nokta_redis_exporter
+    restart: always
+    environment:
+      REDIS_ADDR: redis:6379
+      REDIS_PASSWORD: nokta_redis_2024
+    ports:
+      - "9121:9121"
+    depends_on:
+      - redis
+    networks:
+      - nokta_network
+    profiles:
+      - monitoring
+
 networks:
   nokta_network:
     driver: bridge
@@ -105,3 +164,5 @@ networks:
 volumes:
   mysql_data:
   redis_data:
+  prometheus_data:
+  grafana_data:

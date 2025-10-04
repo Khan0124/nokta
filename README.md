@@ -11,6 +11,7 @@ A comprehensive, production-ready Point of Sale (POS) system built with modern a
 - **Order Management** - Complete order lifecycle
 - **Payment Processing** - Multiple payment methods
 - **Reporting & Analytics** - Business insights
+- **Dynamic Pricing** - Tenant-controlled offers and availability overrides
 - **Mobile Applications** - Flutter-based mobile apps
 - **API-First Design** - RESTful API with comprehensive documentation
 
@@ -45,6 +46,8 @@ A comprehensive, production-ready Point of Sale (POS) system built with modern a
 - **Session Management** - Redis-based sessions
 - **Rate Limiting** - Brute force protection
 - **Audit Logging** - Complete activity tracking
+- **Account Defense** - Login lockouts, inactivity timeouts, and session fingerprinting
+- **Operational Metrics** - Built-in latency/error telemetry and alert evaluation
 
 ## 📁 Project Structure
 
@@ -60,16 +63,13 @@ nokta_saas/
 │   ├── Dockerfile.prod        # Production Docker image
 │   └── package.json           # Node.js dependencies
 ├── apps/                      # Flutter applications
-│   ├── pos_app/              # Point of Sale app
-│   ├── customer_app/          # Customer-facing app
-│   ├── driver_app/            # Delivery driver app
-│   ├── manager_app/           # Management dashboard
-│   ├── admin_panel/           # Admin web panel
-│   └── call_center/           # Customer service app
+│   ├── admin_panel/           # Admin analytics web build
+│   ├── call_center_app/       # Call center console
+│   ├── customer_app/          # Customer mobile/web app
+│   ├── driver_app/            # Driver mobile app
+│   └── pos_app/               # In-store POS experience
 ├── packages/                   # Shared Flutter packages
-│   ├── core/                  # Core functionality
-│   ├── api_client/            # API client library
-│   └── ui_kit/                # UI components
+│   └── core/                  # Shared models, services, and widgets
 ├── database/                   # Database schemas and migrations
 ├── nginx/                     # Web server configuration
 ├── monitoring/                 # Monitoring and alerting
@@ -77,6 +77,18 @@ nokta_saas/
 ├── docker-compose.prod.yml    # Production environment
 └── README.md                  # This file
 ```
+
+## 🗂️ Binary Assets
+
+This repository uses [Git LFS](https://git-lfs.com/) to manage large or binary files such as images, audio, video, and PDF documents. The `.gitattributes` configuration automatically tracks common binary extensions (`png`, `jpg`, `jpeg`, `gif`, `svg`, `mp3`, `wav`, `mp4`, `mov`, `pdf`), ensuring these assets are stored efficiently and do not bloat regular Git history.
+
+> **Note for contributors:** Install Git LFS locally before cloning or pulling updates to guarantee binary assets are fetched correctly:
+
+```bash
+git lfs install
+```
+
+When new binary files are added that match the configured patterns, they will be stored via LFS automatically—no extra steps required.
 
 ## 🛠️ Technology Stack
 
@@ -88,7 +100,7 @@ nokta_saas/
 - **Authentication**: JWT + Bcrypt
 - **Validation**: Joi
 - **Logging**: Winston
-- **Testing**: Jest + Supertest
+- **Testing**: Node.js test runner (`node --test`) + Supertest
 - **Documentation**: OpenAPI/Swagger
 
 ### Frontend
@@ -134,7 +146,7 @@ nano backend/.env
 docker-compose up -d
 
 # Run database migrations
-docker-compose exec backend node database/migrate.js up
+make migrate
 
 # Check service status
 docker-compose ps
@@ -143,6 +155,19 @@ docker-compose ps
 ### 4. Access Services
 - **Backend API**: http://localhost:3001
 - **phpMyAdmin**: http://localhost:8080
+- **Grafana (monitoring)**: http://localhost:3000 (default credentials: `admin` / `admin`)
+
+See [MONITORING_SETUP.md](MONITORING_SETUP.md) for enabling Prometheus, Grafana, and exporters in development or production.
+
+### 5. Run the Call Center Console
+
+```bash
+cd apps/call_center_app
+flutter pub get
+flutter run -d chrome
+```
+
+The console respects the `call_center_console` feature flag. Enable the flag in the admin panel or via the feature flag API before distributing the build. Operational workflows and KPIs are documented in [CALL_CENTER_OPERATIONS_GUIDE.md](CALL_CENTER_OPERATIONS_GUIDE.md).
 - **Health Check**: http://localhost:3001/health
 
 ## 🔧 Development
@@ -157,16 +182,11 @@ npm install
 # Start development server
 npm run dev
 
-# Run tests
+# Run tests (Node.js test runner)
 npm test
 
-# Run tests with coverage
-npm run test:coverage
-
-# Database migrations
-npm run migrate:up
-npm run migrate:down
-npm run migrate:status
+# Apply pending database migrations
+npm run migrate
 ```
 
 ### Flutter Development
@@ -186,17 +206,15 @@ melos build:all
 
 ### Database Management
 ```bash
-# Create new migration
-npm run migrate:create add_new_table
+# Apply pending migrations using the repository helper
+make migrate
 
-# Run migrations
-npm run migrate:up
+# Or run the Node.js migration runner directly
+node backend/migrations/run.js
 
-# Rollback migrations
-npm run migrate:down 001
-
-# Check migration status
-npm run migrate:status
+# Create a new migration file (naming convention)
+cp database/migrations/202402050900__dynamic_pricing_adoption_view.sql \
+  database/migrations/$(date +%Y%m%d%H%M)__your_change.sql
 ```
 
 ## 🚀 Production Deployment
@@ -292,13 +310,10 @@ docker-compose -f docker-compose.prod.yml --profile backup up backup
 npm test
 
 # Specific test file
-npm test -- tests/auth.test.js
+node --test tests/call_center.test.js
 
-# Coverage report
-npm run test:coverage
-
-# Watch mode
-npm run test:watch
+# Watch mode (requires Node.js 20.11+)
+node --test --watch tests
 ```
 
 ## 📈 Monitoring & Observability
@@ -343,7 +358,6 @@ jobs:
       - uses: actions/setup-node@v3
       - run: npm ci
       - run: npm test
-      - run: npm run test:coverage
 
   build:
     needs: test
@@ -356,19 +370,9 @@ jobs:
 
 ## 📚 API Documentation
 
-### API Endpoints
-- **Authentication**: `/api/v1/auth/*`
-- **Users**: `/api/v1/users/*`
-- **Products**: `/api/v1/products/*`
-- **Orders**: `/api/v1/orders/*`
-- **Inventory**: `/api/v1/inventory/*`
-- **System**: `/api/v1/system/*`
-
-### API Documentation
-- Interactive API docs: `/api/v1/docs`
-- OpenAPI specification available
-- Postman collection provided
-- SDK libraries for multiple languages
+- The canonical specification lives at [`docs/openapi.yaml`](docs/openapi.yaml). Validate it with `npm run docs:openapi` from the `backend/` directory.
+- A curated overview with sample payloads is available in [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md).
+- The backend exposes a lightweight JSON index at `GET /api/v1/docs` for quick discovery.
 
 ## 🤝 Contributing
 
@@ -394,10 +398,35 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🆘 Support
 
 ### Documentation
-- [API Documentation](docs/api.md)
-- [Deployment Guide](docs/deployment.md)
-- [Troubleshooting](docs/troubleshooting.md)
-- [FAQ](docs/faq.md)
+- [Discovery Audit](AUDIT_REPORT.md)
+- [Database Schema](DB_SCHEMA.md)
+- [Architecture Map](ARCH_MAP.png)
+- [Architecture Decisions Baseline](ARCHITECTURE_DECISIONS.md)
+- [Service Integration Points](SERVICE_INTEGRATION_POINTS.md)
+- [Feature Flags Playbook](FEATURE_FLAGS_PLAYBOOK.md)
+- [Localization Guide](I18N_GUIDE.md)
+- [POS Operations Guide](POS_OPERATIONS_GUIDE.md)
+- [Call Center Operations Guide](CALL_CENTER_OPERATIONS_GUIDE.md)
+- [Customer Experience Guide](CUSTOMER_UX_GUIDE.md)
+- [Dynamic Pricing Guide](DYNAMIC_PRICING_GUIDE.md)
+- [Tenant Onboarding Playbook](TENANT_ONBOARDING_GUIDE.md)
+- [Customer App Test Plan](CUSTOMER_TEST_PLAN.md)
+- [Admin Dashboard Operations Guide](ADMIN_DASHBOARD_GUIDE.md)
+- [Billing Suspension & Reactivation Policy](BILLING_POLICY.md)
+- [Subscription Invoice PDF Template](INVOICE_TEMPLATE.md)
+- [Payment Collection Log SOP](PAYMENT_COLLECTION_LOG.md)
+- [Security Checklist](SECURITY_CHECKLIST.md)
+- [Backup & Restore Runbook](BACKUP_RESTORE_RUNBOOK.md)
+- [Migration & Cutover Plan](MIGRATION_REPORT.md)
+- [Definition of Done & SLOs](DOD_SLOS.md)
+- [Admin Report Templates](ADMIN_REPORT_TEMPLATES.md)
+- [Driver Route Tracking Blueprint](DRIVER_ROUTE_TRACKING.md)
+- [Driver Location Privacy Policy](DRIVER_LOCATION_PRIVACY_POLICY.md)
+- [Driver Performance Report Template](DRIVER_PERFORMANCE_REPORT_TEMPLATE.md)
+- [POS Test Plan](POS_TEST_PLAN.md)
+- [API Reference Overview](docs/API_DOCUMENTATION.md)
+- [OpenAPI Specification](docs/openapi.yaml)
+- [Monitoring Setup](MONITORING_SETUP.md)
 
 ### Community
 - [GitHub Issues](https://github.com/your-org/nokta_saas/issues)

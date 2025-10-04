@@ -1,0 +1,183 @@
+{
+  "app": {
+    "title": "نقطة"
+  },
+  "common": {
+    "ok": "موافق",
+    "save": "حفظ",
+    "error": "خطأ",
+    "seconds": "ث"
+  },
+  "pos": {
+    "screenTitle": "نقطة البيع",
+    "allFilter": "الكل",
+    "errorLoading": "حدث خطأ",
+    "orderType": "نوع الطلب",
+    "orderTypeDineIn": "محلي",
+    "orderTypeTakeaway": "سفري",
+    "orderTypeDelivery": "توصيل",
+    "cartEmptyTitle": "السلة فارغة",
+    "cartEmptySubtitle": "اضغط على منتج لإضافته",
+    "subtotal": "المجموع الجزئي",
+    "tax": "الضريبة",
+    "total": "الإجمالي",
+    "clearCart": "مسح السلة",
+    "holdOrder": "تعليق",
+    "checkout": "دفع",
+    "addedToCart": "تمت إضافة {product} إلى السلة",
+    "orderHeld": "تم حفظ الطلب",
+    "paymentDialogTitle": "معالجة الدفع",
+    "paymentDialogBody": "سيتم تفعيل معالجة الدفع قريباً",
+    "language": "اللغة",
+    "languageEnglish": "الإنجليزية",
+    "languageArabic": "العربية",
+    "activeOffers": "العروض النشطة",
+    "offlineModeTitle": "الوضع غير المتصل",
+    "offlineModeSubtitle": "سيتم حفظ الطلبات محلياً ومزامنتها تلقائياً عند عودة الاتصال.",
+    "pendingOrdersLabel": "{count} طلب قيد الانتظار",
+    "syncInProgress": "جاري مزامنة {count} طلب",
+    "syncPending": "{count} طلب بانتظار المزامنة",
+    "syncErrorStatus": "فشل في المزامنة • ما يزال {count} طلباً معلقاً",
+    "lastSyncedAt": "آخر مزامنة في {time}",
+    "receiptCompact": "إيصال مختصر",
+    "receiptFull": "إيصال كامل",
+    "receiptPrinted": "تم إرسال الإيصال للطابعة",
+    "printError": "تعذر طباعة الإيصال",
+    "orderQueued": "تم حفظ الطلب للمزامنة (مرجع #{reference})",
+    "orderSynced": "تم إنشاء الطلب رقم #{order} بنجاح"
+  },
+  "customer": {
+    "common": {
+      "viewAll": "عرض الكل",
+      "errorLoading": "تعذر تحميل هذا القسم",
+      "loading": "جاري التحميل...",
+      "retry": "إعادة المحاولة",
+      "close": "إغلاق",
+      "minutes": "د",
+      "startTyping": "ابدأ بالكتابة للبحث"
+    },
+    "nav": {
+      "home": "الرئيسية",
+      "search": "البحث",
+      "orders": "الطلبات",
+      "profile": "حسابي"
+    },
+    "home": {
+      "greeting": "مرحباً بك",
+      "subtitle": "اكتشف الأطباق والعروض القريبة منك",
+      "searchPlaceholder": "ابحث عن مطعم أو طبق",
+      "featuredTitle": "مطاعم مميزة",
+      "popularTitle": "الأكثر طلباً",
+      "nearbyTitle": "قريبة منك",
+      "recommendedTitle": "مقترحة لك",
+      "checkoutButton": "إتمام الطلب • {total}"
+    },
+    "cart": {
+      "items": "العناصر: {count}"
+    },
+    "loyalty": {
+      "title": "الولاء",
+      "points": "النقاط",
+      "tier": "المستوى",
+      "progress": "متبقي {points} نقطة للوصول للمستوى التالي"
+    },
+    "restaurant": {
+      "eta": "{time} دقيقة",
+      "etaShort": "{time} دقيقة",
+      "freeDelivery": "توصيل مجاني",
+      "aboutTitle": "عن المطعم",
+      "address": "العنوان",
+      "phone": "الهاتف",
+      "hours": "ساعات العمل",
+      "paymentMethods": "طرق الدفع",
+      "chefNotes": "ملاحظات الشيف",
+      "distance": "{distance} كم",
+      "addToCart": "إضافة",
+      "viewCart": "عرض السلة",
+      "quantity": "الكمية",
+      "addedToCart": "تمت إضافة {product} إلى السلة",
+      "addItemButton": "أضف مقابل {price}"
+    },
+    "checkout": {
+      "title": "الدفع",
+      "fulfilment": "طريقة الاستلام",
+      "schedule": "جدولة",
+      "summary": "ملخص الطلب",
+      "payment": "الدفع",
+      "notesLabel": "ملاحظات",
+      "notesHint": "هل لديك تعليمات خاصة؟",
+      "suggestions": "قد يعجبك أيضاً",
+      "placeOrderButton": "تأكيد الطلب • {total}",
+      "success": "تم إرسال الطلب بنجاح",
+      "error": "تعذر إنشاء الطلب ({error})",
+      "addAddressTitle": "إضافة عنوان",
+      "addAddressBody": "ستتوفر إدارة العناوين قريباً، يرجى استخدام عنوان محفوظ."
+    },
+    "order": {
+      "appBar": "الطلب {id}",
+      "timelineTitle": "تتبع حالة الطلب",
+      "inProgress": "قيد التنفيذ",
+      "mapPlaceholder": "موقع السائق",
+      "detailsTitle": "تفاصيل الطلب",
+      "orderId": "رقم الطلب",
+      "totalAmount": "الإجمالي",
+      "deliveryAddress": "عنوان التوصيل",
+      "paymentMethod": "طريقة الدفع",
+      "paymentPending": "قيد الانتظار",
+      "itemsHeading": "العناصر",
+      "driverTitle": "السائق",
+      "driverUnknown": "لم يحدد",
+      "callDriver": "اتصال",
+      "chatDriver": "محادثة",
+      "supportTitle": "تحتاج مساعدة؟",
+      "supportBody": "سيتواصل فريق الدعم مع المطعم والسائق نيابةً عنك.",
+      "status": {
+        "placed": "تم إنشاء الطلب",
+        "confirmed": "تم تأكيد المطعم",
+        "preparing": "جاري التحضير",
+        "driverAssigned": "تم تعيين السائق",
+        "onTheWay": "في الطريق",
+        "delivered": "تم التسليم",
+        "cancelled": "تم الإلغاء"
+      }
+    },
+    "profile": {
+      "title": "حسابي",
+      "loyaltyHeading": "نظرة على الولاء",
+      "points": "النقاط: {points}",
+      "tier": "المستوى: {tier}",
+      "addresses": "العناوين المحفوظة",
+      "payments": "طرق الدفع",
+      "preferences": "التفضيلات",
+      "signOut": "تسجيل الخروج"
+    },
+    "search": {
+      "placeholder": "ابحث في القائمة",
+      "startTyping": "ابحث في القائمة",
+      "noResults": "لا توجد نتائج لـ {query}"
+    }
+  },
+  "callCenter": {
+    "title": "وحدة الكول سنتر",
+    "flagDisabled": "وحدة الكول سنتر غير مفعلة حالياً لهذا المستأجر.",
+    "contactAdministrator": "يرجى التواصل مع المسؤول لتفعيل الميزة.",
+    "searchHint": "ابحث بالرقم أو الاسم",
+    "waiting": "مكالمات منتظرة",
+    "active": "مكالمات جارية",
+    "averageWait": "متوسط الانتظار",
+    "queuePriority": "أولوية {priority}",
+    "queueWaitTime": "{minutes}د {seconds}ث",
+    "selectPrompt": "اختر مكالمة من الطابور لعرض تفاصيل العميل.",
+    "waitingSince": "منتظر منذ",
+    "priority": "الأولوية",
+    "customerHistory": "سجل العميل",
+    "createOrder": "إنشاء طلب",
+    "orderCreated": "تم إنشاء الطلب {reference}",
+    "lastOrder": "آخر طلب #{orderId}",
+    "customerId": "رقم العميل #{customerId}",
+    "customerTier": "المستوى: {tier}",
+    "points": "النقاط: {points}",
+    "lifetimeValue": "القيمة التراكمية: {value}",
+    "favoriteBranches": "الفروع المفضلة: {branches}"
+  }
+}

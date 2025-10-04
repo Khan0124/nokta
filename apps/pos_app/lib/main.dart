@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:nokta_core/nokta_core.dart';
 
 import 'screens/pos/enhanced_pos_screen.dart';
 
@@ -12,19 +13,35 @@ void main() async {
   await initializeDateFormatting('en_US');
   await initializeDateFormatting('ar_SA');
 
+  final localeService = await LocaleService.create();
+  final offlineQueue = await OfflineOrderQueue.create();
+
   runApp(
-    const ProviderScope(
-      child: POSApp(),
+    ProviderScope(
+      overrides: [
+        localeServiceProvider.overrideWithValue(localeService),
+        offlineOrderQueueProvider.overrideWithValue(offlineQueue),
+      ],
+      child: const POSApp(),
     ),
   );
 }
 
-class POSApp extends StatelessWidget {
+class POSApp extends ConsumerWidget {
   const POSApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider);
     return MaterialApp(
+      locale: locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       title: 'Nokta POS',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(

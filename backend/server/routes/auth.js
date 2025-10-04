@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const config = require('../../config/config');
 const databaseManager = require('../../config/database');
 const redisManager = require('../../config/redis');
-const { logger, securityLogger } = require('../../config/logger');
+const { logger, securityLogger, auditLogger } = require('../../config/logger');
 const { validate, schemas } = require('../../middleware/validation');
 const { authenticateToken, createRateLimiter } = require('../../middleware/auth');
 const { asyncHandler } = require('../../middleware/errorHandler');
@@ -16,6 +16,46 @@ const authLimiter = createRateLimiter(
   config.rateLimit.windowMs,
   config.rateLimit.authMaxRequests
 );
+
+const recordFailedLoginAttempt = async ({ userId = null, username, ip, reason }) => {
+  try {
+    const key = userId ? `failed_attempts:${userId}` : `failed_attempts:ip:${ip}`;
+    const attempts = await redisManager.incr(key);
+
+    if (attempts === 1) {
+      await redisManager.expire(key, config.security.failedAttemptWindow);
+    }
+
+    if (userId && attempts >= config.security.lockoutThreshold) {
+      await redisManager.setEx(`lockout:${userId}`, {
+        attempts,
+        reason: 'Too many failed login attempts',
+        lockedAt: new Date().toISOString()
+      }, config.security.lockoutDuration);
+
+      securityLogger.failedLogin(username, ip, 'Account locked');
+      auditLogger.warn('account_locked', {
+        username,
+        ip,
+        attempts
+      });
+
+      return { locked: true, attempts };
+    }
+
+    securityLogger.failedLogin(username, ip, reason);
+    return { locked: false, attempts };
+  } catch (error) {
+    logger.error('Failed to record login attempt', {
+      username,
+      ip,
+      reason,
+      error: error.message
+    });
+    securityLogger.failedLogin(username, ip, reason);
+    return { locked: false, attempts: 0 };
+  }
+};
 
 // Login endpoint
 router.post('/login', 
@@ -33,17 +73,12 @@ router.post('/login',
       );
 
       if (!user) {
-        securityLogger.failedLogin(username, clientIP, 'User not found');
-        return res.status(401).json({
-          error: 'Invalid credentials',
-          code: 'INVALID_CREDENTIALS'
+        await recordFailedLoginAttempt({
+          username,
+          ip: clientIP,
+          reason: 'User not found'
         });
-      }
 
-      // Verify password
-      const isValidPassword = await bcrypt.compare(password, user.password_hash);
-      if (!isValidPassword) {
-        securityLogger.failedLogin(username, clientIP, 'Invalid password');
         return res.status(401).json({
           error: 'Invalid credentials',
           code: 'INVALID_CREDENTIALS'
@@ -54,10 +89,36 @@ router.post('/login',
       const lockoutKey = `lockout:${user.id}`;
       const isLocked = await redisManager.exists(lockoutKey);
       if (isLocked) {
+        const retryAfter = await redisManager.ttl(lockoutKey);
         securityLogger.failedLogin(username, clientIP, 'Account locked');
         return res.status(423).json({
           error: 'Account is temporarily locked due to multiple failed attempts',
-          code: 'ACCOUNT_LOCKED'
+          code: 'ACCOUNT_LOCKED',
+          retryAfter: retryAfter > 0 ? retryAfter : config.security.lockoutDuration
+        });
+      }
+
+      // Verify password
+      const isValidPassword = await bcrypt.compare(password, user.password_hash);
+      if (!isValidPassword) {
+        const attempt = await recordFailedLoginAttempt({
+          userId: user.id,
+          username,
+          ip: clientIP,
+          reason: 'Invalid password'
+        });
+
+        if (attempt.locked) {
+          return res.status(423).json({
+            error: 'Account is temporarily locked due to multiple failed attempts',
+            code: 'ACCOUNT_LOCKED',
+            retryAfter: config.security.lockoutDuration
+          });
+        }
+
+        return res.status(401).json({
+          error: 'Invalid credentials',
+          code: 'INVALID_CREDENTIALS'
         });
       }
 
@@ -86,12 +147,16 @@ router.post('/login',
 
       // Store session in Redis
       const sessionKey = `session:${user.id}`;
+      const nowIso = new Date().toISOString();
       const sessionData = {
         token,
         role: user.role,
         tenantId: user.tenant_id,
         permissions: user.permissions || [],
-        lastActivity: new Date().toISOString()
+        lastActivity: nowIso,
+        createdAt: nowIso,
+        ip: clientIP,
+        userAgent: req.get('user-agent')
       };
 
       const sessionTTL = rememberMe ? 86400 * 30 : 86400; // 30 days or 1 day
@@ -99,9 +164,16 @@ router.post('/login',
 
       // Log successful login
       securityLogger.loginAttempt(username, clientIP, true);
+      auditLogger.info('user_login_success', {
+        userId: user.id,
+        username: user.username,
+        ip: clientIP,
+        rememberMe
+      });
 
       // Clear any failed login attempts
       await redisManager.del(`failed_attempts:${user.id}`);
+      await redisManager.del(`failed_attempts:ip:${clientIP}`);
 
       res.json({
         success: true,

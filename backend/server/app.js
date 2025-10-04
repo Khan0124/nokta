@@ -7,6 +7,7 @@ const config = require('../config/config');
 const { requestLogger, errorLogger } = require('../config/logger');
 const { errorHandler, notFoundHandler } = require('../middleware/errorHandler');
 const { sanitize } = require('../middleware/validation');
+const metrics = require('../config/metrics');
 
 // Import route modules
 const authRoutes = require('./routes/auth');
@@ -15,10 +16,15 @@ const tenantRoutes = require('./routes/tenants');
 const branchRoutes = require('./routes/branches');
 const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
+const callCenterRoutes = require('./routes/call_center');
 const categoryRoutes = require('./routes/categories');
 const paymentRoutes = require('./routes/payments');
 const inventoryRoutes = require('./routes/inventory');
 const systemRoutes = require('./routes/system');
+const adminDashboardRoutes = require('./routes/admin_dashboard');
+const billingRoutes = require('./routes/billing');
+const featureFlagRoutes = require('./routes/feature_flags');
+const dynamicPricingRoutes = require('./routes/dynamic_pricing');
 
 class App {
   constructor() {
@@ -78,6 +84,11 @@ class App {
     // Request logging
     this.app.use(requestLogger);
 
+    // Performance metrics collection
+    if (metrics.metricsEnabled) {
+      this.app.use(metrics.requestMetricsMiddleware);
+    }
+
     // Input sanitization
     this.app.use(sanitize);
 
@@ -112,10 +123,15 @@ class App {
     this.app.use(`${apiVersion}/branches`, branchRoutes);
     this.app.use(`${apiVersion}/products`, productRoutes);
     this.app.use(`${apiVersion}/orders`, orderRoutes);
+    this.app.use(`${apiVersion}/call-center`, callCenterRoutes);
     this.app.use(`${apiVersion}/categories`, categoryRoutes);
     this.app.use(`${apiVersion}/payments`, paymentRoutes);
     this.app.use(`${apiVersion}/inventory`, inventoryRoutes);
     this.app.use(`${apiVersion}/system`, systemRoutes);
+    this.app.use(`${apiVersion}/admin/dashboard`, adminDashboardRoutes);
+    this.app.use(`${apiVersion}/billing`, billingRoutes);
+    this.app.use(`${apiVersion}/feature-flags`, featureFlagRoutes);
+    this.app.use(`${apiVersion}/pricing/dynamic`, dynamicPricingRoutes);
 
     // API documentation
     this.app.get(`${apiVersion}/docs`, (req, res) => {
@@ -132,7 +148,9 @@ class App {
           categories: `${apiVersion}/categories`,
           payments: `${apiVersion}/payments`,
           inventory: `${apiVersion}/inventory`,
-          system: `${apiVersion}/system`
+          system: `${apiVersion}/system`,
+          adminDashboard: `${apiVersion}/admin/dashboard`,
+          billing: `${apiVersion}/billing`
         },
         documentation: 'https://docs.nokta-pos.com'
       });

@@ -75,6 +75,9 @@ coverage/
 **/.env
 **/.env.*
 
+# Generated backup artifacts
+backend/backups/
+
 # IDE & Editors
 .vscode/
 .idea/
@@ -120,7 +123,10 @@ firebase_options.dart
 **/*.tabler_icons.dart
 
 # L10n/Intl generated files
+# Generated l10n folders are ignored by default, keep the core runtime loader
 **/lib/l10n/
+!packages/core/lib/l10n/
+!packages/core/lib/l10n/app_localizations.dart
 **/lib/generated/
 
 # Test related
@@ -177,3 +183,7 @@ private/
 # Stripe & Payment configs
 **/lib/config/stripe_config.dart
 **/lib/config/payment_config.dart
+
+# Billing artifacts
+backend/storage/invoices/
+

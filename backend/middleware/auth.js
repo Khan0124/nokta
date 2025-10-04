@@ -51,11 +51,11 @@ const authenticateToken = async (req, res, next) => {
         });
       }
 
-      // Check if user session exists in Redis
-      const sessionKey = `session:${decoded.id}`;
-      const session = await redisManager.get(sessionKey);
-      
-      if (!session) {
+    // Check if user session exists in Redis
+    const sessionKey = `session:${decoded.id}`;
+    const session = await redisManager.get(sessionKey);
+
+    if (!session) {
         securityLogger.permissionDenied(decoded.id, 'API', 'Session not found', req.ip);
         return res.status(401).json({ 
           error: 'Session expired',
@@ -63,19 +63,41 @@ const authenticateToken = async (req, res, next) => {
         });
       }
 
-      // Check if token matches session token
-      if (session.token !== token) {
-        securityLogger.permissionDenied(decoded.id, 'API', 'Token mismatch', req.ip);
-        return res.status(401).json({ 
-          error: 'Invalid session',
-          code: 'SESSION_INVALID'
-        });
-      }
+    // Check if token matches session token
+    if (session.token !== token) {
+      securityLogger.permissionDenied(decoded.id, 'API', 'Token mismatch', req.ip);
+      return res.status(401).json({
+        error: 'Invalid session',
+        code: 'SESSION_INVALID'
+      });
+    }
 
-      // Add user info to request
-      req.user = {
-        id: decoded.id,
-        username: decoded.username,
+    const inactivityTimeout = config.security.sessionInactivityTimeout;
+    if (inactivityTimeout > 0 && session.lastActivity) {
+      const lastActivity = new Date(session.lastActivity).getTime();
+      if (!Number.isNaN(lastActivity)) {
+        const inactiveMs = Date.now() - lastActivity;
+        if (inactiveMs > inactivityTimeout * 1000) {
+          await redisManager.del(sessionKey);
+          securityLogger.permissionDenied(decoded.id, 'API', 'Session expired due to inactivity', req.ip);
+          return res.status(401).json({
+            error: 'Session expired due to inactivity',
+            code: 'SESSION_INACTIVE'
+          });
+        }
+      }
+    }
+
+    if (session.ip && session.ip !== req.ip) {
+      securityLogger.suspiciousActivity(decoded.id, req.ip, 'Session IP changed', {
+        previousIp: session.ip
+      });
+    }
+
+    // Add user info to request
+    req.user = {
+      id: decoded.id,
+      username: decoded.username,
         email: decoded.email,
         role: decoded.role,
         tenantId: decoded.tenantId,
@@ -83,11 +105,28 @@ const authenticateToken = async (req, res, next) => {
         permissions: decoded.permissions || []
       };
 
-      // Log successful authentication
-      securityLogger.loginAttempt(decoded.username, req.ip, true);
-      
-      next();
-    });
+    // Log successful authentication
+    securityLogger.loginAttempt(decoded.username, req.ip, true);
+
+    // Refresh session activity timestamp without extending TTL
+    const updatedSession = {
+      ...session,
+      lastActivity: new Date().toISOString(),
+      ip: req.ip,
+      userAgent: req.get('user-agent')
+    };
+
+    try {
+      await redisManager.setKeepTTL(sessionKey, updatedSession);
+    } catch (error) {
+      // Log but do not fail the request
+      securityLogger.suspiciousActivity(decoded.id, req.ip, 'Failed to refresh session TTL', {
+        error: error.message
+      });
+    }
+
+    next();
+  });
   } catch (error) {
     securityLogger.permissionDenied(null, 'API', 'Authentication error', req.ip);
     return res.status(500).json({ 
